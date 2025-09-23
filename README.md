@@ -7,3 +7,12 @@
 ## Getting started
 1. Clone the repo.
 2. Install backend dependencies:
+ cd server
+ npm install
+ npm run dev
+3. Install frontend dependencies:
+ cd ../client
+ npm install
+ npm run dev
+
+The Node .gitignore template already ignores node_modules and other unnecessary files.
