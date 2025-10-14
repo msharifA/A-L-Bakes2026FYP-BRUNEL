@@ -1,0 +1,13 @@
+{
+    "AWSEBDockerrunVersion": "1",
+    "Image": {
+      "Name": "075120018831.dkr.ecr.eu-west-2.amazonaws.com/albakes-backend:latest",
+      "Update": "true"
+    },
+    "Ports": [{ "ContainerPort": "5000" }],
+    "Environment": [
+      { "Name": "PORT", "Value": "5000" },
+      { "Name": "NODE_ENV", "Value": "production" }
+    ]
+  }
+  
