@@ -5,6 +5,9 @@ const { Client } = pkg;
 const app = express();
 
 app.get("/health", (_, res) => res.status(200).send("ok"));
+app.get("/version", (_, res) => {
+    res.json({ tag: process.env.IMAGE_TAG || "unknown", time: new Date().toISOString() });
+  });
 
 app.get("/db-ping", async (_, res) => {
   const client = new Client({
