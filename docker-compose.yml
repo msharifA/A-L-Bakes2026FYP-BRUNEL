@@ -1,0 +1,28 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: albakes
+      POSTGRES_PASSWORD: albakes
+      POSTGRES_DB: albakes_dev
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+
+  web:
+    build:
+      context: ./server
+    env_file:
+      - ./server/.env.local
+    environment:
+      DATABASE_URL: postgres://albakes:albakes@db:5432/albakes_dev
+      PORT: 5000
+      NODE_ENV: development
+    ports:
+      - "5001:5000"               # <— host:container (avoid macOS on 5000)
+    depends_on:
+      - db
+
+volumes:
+  db_data:
