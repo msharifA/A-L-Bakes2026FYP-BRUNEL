@@ -1,0 +1,85 @@
+name: Build & Deploy Backend (EB + ECR)
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - "server/**"
+      - ".github/workflows/deploy-backend.yml"
+  workflow_dispatch:
+
+env:
+  AWS_REGION: eu-west-2
+  APP_NAME: albakes-backend
+  ENV_NAME: albakes-backend-env
+  ECR_REPO: albakes-backend
+  EB_ARTIFACTS_BUCKET: albakes-eb-artifacts-eu-west-2-075120018831
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::075120018831:role/GitHubActionsDeployRole
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to ECR
+        id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build backend image
+        run: |
+          docker build -t $ECR_REPO ./server
+
+      - name: Tag & push image
+        env:
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          ECR_URI="${{ steps.ecr.outputs.registry }}/${ECR_REPO}:${IMAGE_TAG}"
+          docker tag $ECR_REPO $ECR_URI
+          docker push $ECR_URI
+          echo "IMAGE_URI=$ECR_URI" >> $GITHUB_ENV
+          echo "VERSION_LABEL=backend-${IMAGE_TAG}" >> $GITHUB_ENV
+
+      - name: Render Dockerrun.aws.json
+        run: |
+          cat > Dockerrun.aws.json <<'JSON'
+          {
+            "AWSEBDockerrunVersion": 1,
+            "Image": {
+              "Name": "__IMAGE__",
+              "Update": "true"
+            },
+            "Ports": [
+              { "ContainerPort": "5000" }
+            ]
+          }
+          JSON
+          sed -i "s|__IMAGE__|${IMAGE_URI}|g" Dockerrun.aws.json
+
+      - name: Package & upload EB app version
+        run: |
+          zip -q app-${VERSION_LABEL}.zip Dockerrun.aws.json
+          aws s3 cp app-${VERSION_LABEL}.zip s3://${{ env.EB_ARTIFACTS_BUCKET }}/
+
+      - name: Create EB application version
+        run: |
+          aws elasticbeanstalk create-application-version \
+            --application-name "${{ env.APP_NAME }}" \
+            --version-label "${VERSION_LABEL}" \
+            --source-bundle S3Bucket=${{ env.EB_ARTIFACTS_BUCKET }},S3Key=app-${VERSION_LABEL}.zip
+
+      - name: Update EB environment
+        run: |
+          aws elasticbeanstalk update-environment \
+            --environment-name "${{ env.ENV_NAME }}" \
+            --version-label "${VERSION_LABEL}"
