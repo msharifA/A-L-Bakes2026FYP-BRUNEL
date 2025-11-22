@@ -1,0 +1,54 @@
+name: Build & Deploy Frontend (S3 + CloudFront)
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - "client/**"
+      - ".github/workflows/deploy-frontend.yml"
+  workflow_dispatch:
+
+env:
+  AWS_REGION: eu-west-2
+  S3_BUCKET: albakescomingsoon2026
+  CF_DISTRIBUTION_ID: E3AJKL534XOW59
+  VITE_API_BASE_URL: https://dizqgvrbhxb2t.cloudfront.net
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::075120018831:role/GitHubActionsDeployRole
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Build
+        working-directory: client
+        run: |
+          npm ci
+          echo "VITE_API_BASE_URL=${VITE_API_BASE_URL}" > .env.production
+          npm run build
+
+      - name: Sync to S3
+        run: |
+          aws s3 sync client/dist s3://${{ env.S3_BUCKET }} --delete
+
+      - name: Invalidate CloudFront
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id ${{ env.CF_DISTRIBUTION_ID }} \
+            --paths "/*"
