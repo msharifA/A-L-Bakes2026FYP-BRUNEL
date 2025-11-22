@@ -1,0 +1,65 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "EcrLogin",
+      "Effect": "Allow",
+      "Action": [ "ecr:GetAuthorizationToken" ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "EcrPushPull",
+      "Effect": "Allow",
+      "Action": [
+        "ecr:BatchCheckLayerAvailability",
+        "ecr:CompleteLayerUpload",
+        "ecr:UploadLayerPart",
+        "ecr:InitiateLayerUpload",
+        "ecr:PutImage",
+        "ecr:BatchGetImage",
+        "ecr:DescribeRepositories"
+      ],
+      "Resource": "arn:aws:ecr:eu-west-2:075120018831:repository/albakes-backend"
+    },
+    {
+      "Sid": "ArtifactsBucket",
+      "Effect": "Allow",
+      "Action": [
+        "s3:PutObject",
+        "s3:GetObject",
+        "s3:ListBucket"
+      ],
+      "Resource": [
+        "arn:aws:s3:::albakes-eb-artifacts-eu-west-2-075120018831",
+        "arn:aws:s3:::albakes-eb-artifacts-eu-west-2-075120018831/*"
+      ]
+    },
+    {
+      "Sid": "ElasticBeanstalkServiceBucket",
+      "Effect": "Allow",
+      "Action": [
+        "s3:CreateBucket",
+        "s3:GetBucketLocation",
+        "s3:PutObject",
+        "s3:GetObject",
+        "s3:ListBucket"
+      ],
+      "Resource": [
+        "arn:aws:s3:::elasticbeanstalk-eu-west-2-075120018831",
+        "arn:aws:s3:::elasticbeanstalk-eu-west-2-075120018831/*"
+      ]
+    },
+    {
+      "Sid": "ElasticBeanstalkDeploy",
+      "Effect": "Allow",
+      "Action": [
+        "elasticbeanstalk:CreateApplicationVersion",
+        "elasticbeanstalk:UpdateEnvironment",
+        "elasticbeanstalk:DescribeEnvironments",
+        "elasticbeanstalk:DescribeApplicationVersions",
+        "elasticbeanstalk:DescribeConfigurationSettings"
+      ],
+      "Resource": "*"
+    }
+  ]
+}

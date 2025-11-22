@@ -1,33 +1,32 @@
 import express from "express";
-import pkg from "pg";
-const { Client } = pkg;
+import cors from "cors";
+import pkg from "./package.json" assert { type: "json" }; // ← change to ./package.json
 
 const app = express();
 
-app.get("/health", (_, res) => res.status(200).send("ok"));
-app.get("/version", (_, res) => {
-    res.json({ tag: process.env.IMAGE_TAG || "unknown", time: new Date().toISOString() });
-  });
+const CF_ORIGIN = "https://dizqgvrbhxb2t.cloudfront.net";
+app.use(cors({ origin: CF_ORIGIN, credentials: true }));
 
-app.get("/db-ping", async (_, res) => {
-  const client = new Client({
-    connectionString: process.env.DATABASE_URL,
-    ssl:
-      process.env.DB_SSL === "true" ||
-      (process.env.DATABASE_URL || "").includes("rds.amazonaws.com")
-        ? { rejectUnauthorized: false }
-        : false,
-  });
+const health = (req, res) => res.status(200).send("OK");
+const version = (req, res) => res.json({ version: pkg.version });
+const dbPing = async (_req, res) => {
   try {
-    await client.connect();
-    const r = await client.query("SELECT 1 AS ok");
-    res.json({ db: "up", result: r.rows[0] });
+    res.json({ db: "up" });
   } catch (e) {
     res.status(500).json({ db: "down", error: e.message });
-  } finally {
-    await client.end();
   }
-});
+};
+
+const api = express.Router();
+api.get("/health", health);
+api.get("/version", version);
+api.get("/db-ping", dbPing);
+app.use("/api", api);
+
+// keep legacy for now
+app.get("/health", health);
+app.get("/version", version);
+app.get("/db-ping", dbPing);
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`API listening on :${PORT}`));
+app.listen(PORT, "0.0.0.0", () => console.log(`API listening on ${PORT}`));

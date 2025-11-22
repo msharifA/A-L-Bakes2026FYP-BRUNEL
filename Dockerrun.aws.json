@@ -1,7 +1,7 @@
 {
   "AWSEBDockerrunVersion": "1",
   "Image": {
-    "Name": "075120018831.dkr.ecr.eu-west-2.amazonaws.com/albakes-backend:v20251021-112224",
+    "Name": "075120018831.dkr.ecr.eu-west-2.amazonaws.com/albakes-backend:v20251110-200948",
     "Update": "true"
   },
   "Ports": [

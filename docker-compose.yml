@@ -5,10 +5,17 @@ services:
       POSTGRES_USER: albakes
       POSTGRES_PASSWORD: albakes
       POSTGRES_DB: albakes_dev
+      # Optional: store PG data in a subdir to avoid permission quirks on macOS
+      PGDATA: /var/lib/postgresql/data/pgdata
     ports:
       - "5432:5432"
     volumes:
       - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB} -h 127.0.0.1"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
 
   web:
     build:
@@ -16,13 +23,22 @@ services:
     env_file:
       - ./server/.env.local
     environment:
+      # Your app uses this to connect to Postgres in the compose network
       DATABASE_URL: postgres://albakes:albakes@db:5432/albakes_dev
       PORT: 5000
       NODE_ENV: development
     ports:
-      - "5001:5000"               # <— host:container (avoid macOS on 5000)
+      - "5001:5000"        # host:container (5000 is busy on your Mac; 5001 -> 5000)
     depends_on:
-      - db
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:5000/api/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 12
+    # Optional: restart on failure for smoother DX
+    restart: unless-stopped
 
 volumes:
   db_data:
