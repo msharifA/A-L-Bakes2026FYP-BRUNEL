@@ -4,7 +4,7 @@
     {
       "Sid": "EcrLogin",
       "Effect": "Allow",
-      "Action": [ "ecr:GetAuthorizationToken" ],
+      "Action": ["ecr:GetAuthorizationToken"],
       "Resource": "*"
     },
     {
@@ -27,7 +27,8 @@
       "Action": [
         "s3:PutObject",
         "s3:GetObject",
-        "s3:ListBucket"
+        "s3:ListBucket",
+        "s3:GetObjectAcl"
       ],
       "Resource": [
         "arn:aws:s3:::albakes-eb-artifacts-eu-west-2-075120018831",
@@ -42,7 +43,8 @@
         "s3:GetBucketLocation",
         "s3:PutObject",
         "s3:GetObject",
-        "s3:ListBucket"
+        "s3:ListBucket",
+        "s3:GetObjectAcl"
       ],
       "Resource": [
         "arn:aws:s3:::elasticbeanstalk-eu-west-2-075120018831",
@@ -60,6 +62,15 @@
         "elasticbeanstalk:DescribeConfigurationSettings"
       ],
       "Resource": "*"
+    },
+    {
+      "Sid": "CloudFormationForEB",
+      "Effect": "Allow",
+      "Action": [
+        "cloudformation:GetTemplate",
+        "cloudformation:DescribeStackResource"
+      ],
+      "Resource": "arn:aws:cloudformation:eu-west-2:075120018831:stack/awseb-e-*"
     }
   ]
 }
