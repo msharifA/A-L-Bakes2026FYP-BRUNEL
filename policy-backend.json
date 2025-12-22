@@ -4,7 +4,9 @@
     {
       "Sid": "EcrLogin",
       "Effect": "Allow",
-      "Action": ["ecr:GetAuthorizationToken"],
+      "Action": [
+        "ecr:GetAuthorizationToken"
+      ],
       "Resource": "*"
     },
     {
@@ -27,8 +29,7 @@
       "Action": [
         "s3:PutObject",
         "s3:GetObject",
-        "s3:ListBucket",
-        "s3:GetObjectAcl"
+        "s3:ListBucket"
       ],
       "Resource": [
         "arn:aws:s3:::albakes-eb-artifacts-eu-west-2-075120018831",
@@ -44,6 +45,9 @@
         "s3:PutObject",
         "s3:GetObject",
         "s3:ListBucket",
+
+        "s3:DeleteObject",
+        "s3:PutObjectAcl",
         "s3:GetObjectAcl"
       ],
       "Resource": [
@@ -71,6 +75,14 @@
         "cloudformation:DescribeStackResource"
       ],
       "Resource": "arn:aws:cloudformation:eu-west-2:075120018831:stack/awseb-e-*"
+    },
+    {
+      "Sid": "AutoScalingForEB",
+      "Effect": "Allow",
+      "Action": [
+        "autoscaling:DescribeAutoScalingGroups"
+      ],
+      "Resource": "*"
     }
   ]
 }
