@@ -72,10 +72,12 @@
       "Effect": "Allow",
       "Action": [
         "cloudformation:GetTemplate",
-        "cloudformation:DescribeStackResource"
+        "cloudformation:DescribeStackResource",
+        "cloudformation:DescribeStackResources"
       ],
       "Resource": "arn:aws:cloudformation:eu-west-2:075120018831:stack/awseb-e-*"
     },
+    
     {
       "Sid": "AutoScalingForEB",
       "Effect": "Allow",
