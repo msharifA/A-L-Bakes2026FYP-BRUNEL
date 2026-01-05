@@ -1,101 +1,32 @@
-import { useEffect, useState } from "react";
-import reactLogo from "./assets/react.svg";
-import viteLogo from "/vite.svg";
-import "./App.css";
+import { BrowserRouter, Routes, Route, Link } from "react-router-dom";
+import Home from "./Home";
+import Shop from "./Shop";
+import ProductDetail from "./ProductDetail";
+import Cart from "./Cart";
+import Checkout from "./Checkout";
+import CheckoutReview from "./CheckoutReview";
 
-function App() {
-  const [count, setCount] = useState(0);
-  const [health, setHealth] = useState("—");
-  const [version, setVersion] = useState("—");
-  const [error, setError] = useState("");
 
-  // Prefer env base URL if present (e.g., local dev), otherwise use '/api' for CloudFront routing in prod
-  const apiBase = import.meta.env?.VITE_API_BASE_URL || "/api";
 
-  useEffect(() => {
-    // auto-check health once on load
-    fetch(`${apiBase}/health`)
-      .then((r) => r.text())
-      .then((txt) => {
-        console.log("Health check:", txt);
-        setHealth(txt);
-      })
-      .catch((e) => {
-        console.error("Health error:", e);
-        setError(String(e));
-      });
 
-    // also grab version (optional)
-    fetch(`${apiBase}/version`)
-      .then((r) => r.json())
-      .then((data) => {
-        console.log("Version:", data);
-        setVersion(JSON.stringify(data));
-      })
-      .catch((e) => {
-        console.error("Version error:", e);
-        setError((prev) => prev || String(e));
-      });
-  }, [apiBase]);
-
-  const checkAgain = async () => {
-    setError("");
-    try {
-      const h = await fetch(`${apiBase}/health`).then((r) => r.text());
-      setHealth(h);
-      const v = await fetch(`${apiBase}/version`).then((r) => r.json());
-      setVersion(JSON.stringify(v));
-    } catch (e) {
-      setError(String(e));
-    }
-  };
-
+export default function App() {
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
+    <BrowserRouter>
+      <nav style={{ padding: 12, display: "flex", gap: 12 }}>
+        <Link to="/">Home</Link>
+        <Link to="/menu">Menu</Link>
+        <Link to="/cart">Cart</Link>
+      </nav>
 
-      <h1>Vite + React</h1>
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/menu" element={<Shop />} />
+        <Route path="/product/:id" element={<ProductDetail />} />
+        <Route path="/cart" element={<Cart />} />
+        <Route path="/checkout" element={<Checkout />} />
+        <Route path="/checkout/review" element={<CheckoutReview />} />
 
-      <div className="card">
-        <button onClick={() => setCount((c) => c + 1)}>count is {count}</button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-
-      <hr />
-
-      <div className="card">
-        <h2>API Connectivity</h2>
-        <p>
-          <strong>apiBase:</strong> <code>{apiBase}</code>
-        </p>
-        <p>
-          <strong>/health:</strong> <code>{health}</code>
-        </p>
-        <p>
-          <strong>/version:</strong> <code>{version}</code>
-        </p>
-        {error && (
-          <p style={{ color: "tomato" }}>
-            <strong>Error:</strong> {error}
-          </p>
-        )}
-        <button onClick={checkAgain}>Check API again</button>
-      </div>
-
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
+      </Routes>
+    </BrowserRouter>
   );
 }
-
-export default App;
