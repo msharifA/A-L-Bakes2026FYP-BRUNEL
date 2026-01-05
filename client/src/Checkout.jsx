@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useCart } from "./cart/CartContext";
+import { createCheckoutSession } from "./api/checkout";
 
 const formatGBP = (pence) => `£${(pence / 100).toFixed(2)}`;
 
@@ -20,6 +21,35 @@ export default function Checkout() {
   // hooks FIRST
   const nav = useNavigate();
   const { items, subtotalPence } = useCart();
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
+  async function handlePay() {
+    setSubmitting(true);
+    setError("");
+  
+    try {
+      const payload = {
+        cartItems: items.map((it) => ({
+          productId: it.productId ?? it.id,
+          qty: it.qty,
+          customisation: it.customisation || {},
+        })),
+        checkout: {
+          name,
+          email,
+          deliveryMethod, // "pickup" or "delivery"
+          deliveryDate,   // optional
+        },
+      };
+  
+      const { url } = await createCheckoutSession(payload);
+      window.location.href = url;
+    } catch (e) {
+      setError(e.message || "Checkout failed");
+    } finally {
+      setSubmitting(false);
+    }
+  }
 
   // form state
   const [deliveryMethod, setDeliveryMethod] = useState("pickup"); // pickup | delivery
@@ -260,6 +290,11 @@ export default function Checkout() {
           >
             Continue to review
           </button>
+          <button type="button" onClick={handlePay} disabled={submitting || !isValid}>
+  {submitting ? "Redirecting..." : "Pay"}
+</button>
+
+{error ? <div style={{ color: "crimson", marginTop: 8 }}>{error}</div> : null}
 
           {!isValid && (
             <p style={{ marginTop: 10, color: "#bbb", fontSize: 13 }}>

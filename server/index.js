@@ -34,6 +34,12 @@ app.use(
     credentials: true,
   })
 );
+const raw =process.env.STRIPE_SECRET_KEY;
+console.log("Stripe key typeof:", typeof raw);
+console.log("Stripe key prefic:", (raw || "").slice(0, 12));
+console.log("Stripe key length:", (raw || "").length);
+console.log("Stripe key trimmed length:", (raw || "").trim().length);
+console.log("Stripe key has spaces:", /\s/.test(raw || ""));
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
@@ -51,7 +57,12 @@ const dbPing = async (_req, res) => {
     const r = await pool.query("SELECT 1 as ok");
     res.json({ db: "up", ok: r.rows[0].ok });
   } catch (e) {
-    res.status(500).json({ db: "down", error: e.message });
+    console.error("dbPing error:", e);
+    res.status(500).json({ 
+      db: "down",
+      error: e?.message || String(e),
+      code: e?.code || null
+     });
   }
 };
 

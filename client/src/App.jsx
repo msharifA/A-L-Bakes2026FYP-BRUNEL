@@ -5,7 +5,7 @@ import ProductDetail from "./ProductDetail";
 import Cart from "./Cart";
 import Checkout from "./Checkout";
 import CheckoutReview from "./CheckoutReview";
-
+import OrderSuccess from "./OrderSuccess";
 
 
 
@@ -25,7 +25,7 @@ export default function App() {
         <Route path="/cart" element={<Cart />} />
         <Route path="/checkout" element={<Checkout />} />
         <Route path="/checkout/review" element={<CheckoutReview />} />
-
+        <Route path="/order-success" element={<OrderSuccess />} />
       </Routes>
     </BrowserRouter>
   );
