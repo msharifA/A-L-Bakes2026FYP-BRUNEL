@@ -6,8 +6,9 @@ import Cart from "./Cart";
 import Checkout from "./Checkout";
 import CheckoutReview from "./CheckoutReview";
 import OrderSuccess from "./OrderSuccess";
-
-
+import TrackOrder from "./TrackOrder";
+import AdminLogin from "./AdminLogin";
+import AdminDashboard from "./AdminDashboard";
 
 export default function App() {
   return (
@@ -26,6 +27,11 @@ export default function App() {
         <Route path="/checkout" element={<Checkout />} />
         <Route path="/checkout/review" element={<CheckoutReview />} />
         <Route path="/order-success" element={<OrderSuccess />} />
+        <Route path="/track/:orderId" element={<TrackOrder />} />
+        <Route path="/admin/login" element={<AdminLogin />} />
+        <Route path="/admin" element={<AdminDashboard />} />
+
+
       </Routes>
     </BrowserRouter>
   );

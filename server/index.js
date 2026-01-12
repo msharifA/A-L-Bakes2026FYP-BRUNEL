@@ -3,16 +3,36 @@ import express from "express";
 import cors from "cors";
 import Stripe from "stripe";
 import { pool } from "./db.js";
+import cookieParser from "cookie-parser";
+import authRoutes from "./routes/auth.routes.js";
+import { requireAdmin } from "./middleware/requireAdmin.js";
+
+
+// ✅ NEW: route modules
+import ordersRoutes from "./routes/orders.routes.js";
+import webhookRoutes from "./routes/webhooks.routes.js";
+import adminOrdersRoutes from "./routes/admin.orders.routes.js";
 
 console.log("ENV PORT =", process.env.PORT);
 console.log("CWD =", process.cwd());
 console.log("Loaded ENV from CWD:", process.cwd());
 console.log("Stripe key prefix:", process.env.STRIPE_SECRET_KEY?.slice(0, 12));
 
-
 const app = express();
+const api = express.Router();
 
-// Parse JSON (you’ll need this for checkout/orders)
+/**
+ * ✅ IMPORTANT: Stripe Webhooks need the *raw request body* to verify the signature.
+ * Mount `/api/webhooks/*` BEFORE `express.json()`.
+ */
+app.use("/api/webhooks", webhookRoutes);
+
+/**
+ * Parse JSON for normal API routes (products/checkout/orders etc).
+ * This must come AFTER webhook raw-body route above.
+ */
+app.use(cookieParser());
+
 app.use(express.json());
 
 // Allowed origins (local + prod)
@@ -26,7 +46,6 @@ const ALLOWED_ORIGINS = [
 app.use(
   cors({
     origin: (origin, callback) => {
-      // allow non-browser tools (curl, postman) with no origin
       if (!origin) return callback(null, true);
       if (ALLOWED_ORIGINS.includes(origin)) return callback(null, true);
       return callback(new Error(`CORS blocked for origin: ${origin}`));
@@ -34,7 +53,8 @@ app.use(
     credentials: true,
   })
 );
-const raw =process.env.STRIPE_SECRET_KEY;
+
+const raw = process.env.STRIPE_SECRET_KEY;
 console.log("Stripe key typeof:", typeof raw);
 console.log("Stripe key prefic:", (raw || "").slice(0, 12));
 console.log("Stripe key length:", (raw || "").length);
@@ -47,7 +67,6 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 const health = (_req, res) => res.status(200).send("OK");
 
 const version = (_req, res) => {
-  // npm automatically exposes this when run via `npm run ...`
   const v = process.env.npm_package_version || "dev";
   res.json({ version: v });
 };
@@ -58,11 +77,11 @@ const dbPing = async (_req, res) => {
     res.json({ db: "up", ok: r.rows[0].ok });
   } catch (e) {
     console.error("dbPing error:", e);
-    res.status(500).json({ 
+    res.status(500).json({
       db: "down",
       error: e?.message || String(e),
-      code: e?.code || null
-     });
+      code: e?.code || null,
+    });
   }
 };
 
@@ -111,8 +130,10 @@ const getProductById = async (req, res) => {
   }
 };
 
-// --- routes ---
-const api = express.Router();
+// --- routes on /api router ---
+api.use("/admin", requireAdmin, adminOrdersRoutes);
+api.use("/auth", authRoutes);
+
 api.get("/health", health);
 api.get("/version", version);
 api.get("/db-ping", dbPing);
@@ -120,6 +141,8 @@ api.get("/db-ping", dbPing);
 api.get("/products", getProducts);
 api.get("/products/featured", getFeaturedProducts);
 api.get("/products/:id", getProductById);
+
+api.use("/orders", ordersRoutes);
 
 // Stripe: create checkout session
 api.post("/checkout/create-session", async (req, res) => {
@@ -133,7 +156,6 @@ api.post("/checkout/create-session", async (req, res) => {
       return res.status(400).json({ error: "Missing customer details" });
     }
 
-    // 1) Recalculate prices from DB (security)
     const productIds = [...new Set(cartItems.map((it) => Number(it.productId)))].filter(
       (n) => Number.isInteger(n) && n > 0
     );
@@ -151,7 +173,6 @@ api.post("/checkout/create-session", async (req, res) => {
 
     const priceMap = new Map(db.rows.map((p) => [p.id, p]));
 
-    // 2) Build Stripe line items from trusted DB prices
     const line_items = cartItems.map((it) => {
       const pid = Number(it.productId);
       const qty = Math.max(1, Math.min(99, Number(it.qty || 1)));
@@ -180,7 +201,6 @@ api.post("/checkout/create-session", async (req, res) => {
       };
     });
 
-    // 3) Delivery fee (simple fixed fee for now)
     const deliveryFeePence = checkout.deliveryMethod === "delivery" ? 499 : 0;
     if (deliveryFeePence > 0) {
       line_items.push({
@@ -193,7 +213,6 @@ api.post("/checkout/create-session", async (req, res) => {
       });
     }
 
-    // 4) Create Stripe session
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
       customer_email: checkout.email,
@@ -213,8 +232,6 @@ api.post("/checkout/create-session", async (req, res) => {
     res.status(500).json({ error: e.message || "Stripe session failed" });
   }
 });
-
-
 
 app.use("/api", api);
 
