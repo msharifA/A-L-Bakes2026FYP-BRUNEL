@@ -1,8 +1,9 @@
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useContext, useEffect, useMemo, useState, useCallback } from "react";
 
 const CartContext = createContext(null);
 
 const STORAGE_KEY = "albakes_cart_v1";
+const MAX_QTY_PER_ITEM = 3;
 
 function safeParse(json, fallback) {
   try {
@@ -38,7 +39,9 @@ export function CartProvider({ children }) {
       const idx = next.findIndex((it) => it._key === key);
 
       if (idx >= 0) {
-        next[idx] = { ...next[idx], qty: next[idx].qty + qty };
+        // Enforce max quantity limit
+        const newQty = Math.min(next[idx].qty + qty, MAX_QTY_PER_ITEM);
+        next[idx] = { ...next[idx], qty: newQty };
         return next;
       }
 
@@ -48,7 +51,7 @@ export function CartProvider({ children }) {
         name: product.name,
         unitPricePence: product.price_pence,
         category: product.category,
-        qty,
+        qty: Math.min(qty, MAX_QTY_PER_ITEM),
         customisation: customisation || {},
       });
       return next;
@@ -64,12 +67,12 @@ export function CartProvider({ children }) {
     if (!Number.isFinite(q)) return;
     setItems((prev) =>
       prev
-        .map((it) => (it._key === key ? { ...it, qty: Math.max(1, Math.min(99, q)) } : it))
+        .map((it) => (it._key === key ? { ...it, qty: Math.max(1, Math.min(MAX_QTY_PER_ITEM, q)) } : it))
         .filter((it) => it.qty > 0)
     );
   };
 
-  const clearCart = () => setItems([]);
+  const clearCart = useCallback(() => setItems([]), []);
 
   const subtotalPence = useMemo(
     () => items.reduce((sum, it) => sum + it.unitPricePence * it.qty, 0),
@@ -77,8 +80,8 @@ export function CartProvider({ children }) {
   );
 
   const value = useMemo(
-    () => ({ items, addItem, removeItem, setQty, clearCart, subtotalPence }),
-    [items, subtotalPence]
+    () => ({ items, addItem, removeItem, setQty, clearCart, subtotalPence, maxQtyPerItem: MAX_QTY_PER_ITEM }),
+    [items, subtotalPence, clearCart]
   );
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;

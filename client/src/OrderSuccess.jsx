@@ -1,9 +1,11 @@
 import { Link, useSearchParams } from "react-router-dom";
 import { useEffect, useState } from "react";
+import { useCart } from "./cart/CartContext";
 
 export default function OrderSuccess() {
   const [params] = useSearchParams();
   const sessionId = params.get("session_id");
+  const { clearCart } = useCart();
 
   const [loading, setLoading] = useState(true);
   const [orderId, setOrderId] = useState(null);
@@ -18,12 +20,10 @@ export default function OrderSuccess() {
         setLoading(true);
         setError(null);
 
-        // ✅ If Stripe didn’t send a session_id, we can't confirm payment.
         if (!sessionId) {
           throw new Error("Missing Stripe session_id in URL.");
         }
 
-        // ✅ Call backend to verify Stripe session server-side and create the DB order
         const res = await fetch("/api/orders/from-session", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -33,7 +33,6 @@ export default function OrderSuccess() {
         const data = await res.json();
 
         if (!res.ok) {
-          // Backend returns useful messages (e.g. "Payment not confirmed")
           throw new Error(data?.error || "Failed to create order");
         }
 
@@ -41,6 +40,7 @@ export default function OrderSuccess() {
 
         setOrderId(data.orderId);
         setAlreadyExisted(Boolean(data.alreadyExisted));
+        clearCart();
       } catch (e) {
         if (cancelled) return;
         setError(e?.message || "Something went wrong");
@@ -51,11 +51,10 @@ export default function OrderSuccess() {
 
     createOrder();
 
-    // cleanup avoids setting state if user navigates away quickly
     return () => {
       cancelled = true;
     };
-  }, [sessionId]);
+  }, [sessionId, clearCart]);
 
   return (
     <div style={{ padding: 16, maxWidth: 900, margin: "0 auto" }}>

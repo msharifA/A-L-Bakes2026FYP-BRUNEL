@@ -183,28 +183,18 @@ export default function AdminDashboard() {
         style={{
           display: "flex",
           justifyContent: "space-between",
-          alignItems: "baseline",
-          gap: 12,
+          alignItems: "center",
+          marginBottom: 16,
         }}
       >
-        <h1 style={{ margin: 0 }}>Admin dashboard</h1>
-        <Link to="/shop">Back to Menu</Link>
-      </div>
-      <div
-  style={{
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "baseline",
-    gap: 12,
-  }}
->
-  <h1 style={{ margin: 0 }}>Admin dashboard</h1>
+        <h1 style={{ margin: 0 }}>Admin Dashboard</h1>
 
-  <div style={{ display: "flex", gap: 12 }}>
-    <Link to="/shop">Back to Menu</Link>
-    <button onClick={onLogout}>Logout</button>
-  </div>
-</div>
+        <div style={{ display: "flex", gap: 12 }}>
+          <Link to="/admin/reviews">Reviews</Link>
+          <Link to="/shop">Back to Menu</Link>
+          <button onClick={onLogout}>Logout</button>
+        </div>
+      </div>
 
       {/* Filters */}
       <div
@@ -276,8 +266,8 @@ export default function AdminDashboard() {
         }}
       >
         {/* Orders list */}
-        <div style={{ border: "1px solid #444", borderRadius: 10, padding: 12 }}>
-          <h2>Orders</h2>
+        <div style={{ border: "1px solid var(--color-border)", borderRadius: 12, padding: 16, background: "var(--color-bg-card)", boxShadow: "var(--shadow-sm)" }}>
+          <h2 style={{ marginTop: 0 }}>Orders</h2>
 
           {loading && <p>Loading…</p>}
           {!loading && error && <p style={{ color: "salmon" }}>{error}</p>}
@@ -288,11 +278,11 @@ export default function AdminDashboard() {
           {!loading && !error && orders.length > 0 && (
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
-                <tr>
-                  <th>Created</th>
-                  <th>Email</th>
-                  <th>Status</th>
-                  <th>Total</th>
+                <tr style={{ borderBottom: "2px solid var(--color-border)" }}>
+                  <th style={{ padding: "10px 8px", textAlign: "left", fontWeight: 600 }}>Created</th>
+                  <th style={{ padding: "10px 8px", textAlign: "left", fontWeight: 600 }}>Email</th>
+                  <th style={{ padding: "10px 8px", textAlign: "left", fontWeight: 600 }}>Status</th>
+                  <th style={{ padding: "10px 8px", textAlign: "left", fontWeight: 600 }}>Total</th>
                 </tr>
               </thead>
               <tbody>
@@ -304,14 +294,26 @@ export default function AdminDashboard() {
                       cursor: "pointer",
                       background:
                         selectedId === o.id
-                          ? "rgba(255,255,255,0.06)"
+                          ? "rgba(245, 166, 35, 0.1)"
                           : "transparent",
+                      borderBottom: "1px solid var(--color-border)",
+                      transition: "background 0.2s ease",
+                    }}
+                    onMouseEnter={(e) => {
+                      if (selectedId !== o.id) {
+                        e.currentTarget.style.background = "rgba(255,255,255,0.03)";
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (selectedId !== o.id) {
+                        e.currentTarget.style.background = "transparent";
+                      }
                     }}
                   >
-                    <td>{new Date(o.created_at).toLocaleString()}</td>
-                    <td>{o.customer_email}</td>
-                    <td>{nice(o.status)}</td>
-                    <td>{gbp(o.total_pence)}</td>
+                    <td style={{ padding: "12px 8px" }}>{new Date(o.created_at).toLocaleString()}</td>
+                    <td style={{ padding: "12px 8px" }}>{o.customer_email}</td>
+                    <td style={{ padding: "12px 8px" }}>{nice(o.status)}</td>
+                    <td style={{ padding: "12px 8px" }}>{gbp(o.total_pence)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -320,8 +322,8 @@ export default function AdminDashboard() {
         </div>
 
         {/* Order detail */}
-        <div style={{ border: "1px solid #444", borderRadius: 10, padding: 12 }}>
-          <h2>Order details</h2>
+        <div style={{ border: "1px solid var(--color-border)", borderRadius: 12, padding: 16, background: "var(--color-bg-card)", boxShadow: "var(--shadow-sm)" }}>
+          <h2 style={{ marginTop: 0 }}>Order Details</h2>
 
           {!selectedId && <p>Select an order.</p>}
           {selectedId && detailLoading && <p>Loading…</p>}
