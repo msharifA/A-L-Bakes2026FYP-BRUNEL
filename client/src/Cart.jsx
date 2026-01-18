@@ -4,11 +4,22 @@ import { useCart } from "./cart/CartContext";
 const formatGBP = (pence) => `£${(pence / 100).toFixed(2)}`;
 
 export default function Cart() {
-  const { items, removeItem, setQty, subtotalPence, clearCart } = useCart();
+  const { items, removeItem, setQty, subtotalPence, clearCart, maxQtyPerItem } = useCart();
 
   if (!items.length) {
     return (
-      <div style={{ padding: 16, maxWidth: 900, margin: "0 auto" }}>
+      <div style={{ padding: 16, maxWidth: 900, margin: "0 auto", textAlign: "center" }}>
+        <img
+          src="/src/assets/logo.jpg"
+          alt="A&L Bakes"
+          style={{
+            width: 120,
+            height: 120,
+            borderRadius: "50%",
+            objectFit: "cover",
+            marginBottom: 16,
+          }}
+        />
         <h1>Your Cart</h1>
         <p>Your cart is empty.</p>
         <Link to="/menu">Go to Menu</Link>
@@ -18,6 +29,18 @@ export default function Cart() {
 
   return (
     <div style={{ padding: 16, maxWidth: 900, margin: "0 auto" }}>
+      <div style={{ textAlign: "center", marginBottom: 16 }}>
+        <img
+          src="/src/assets/logo.jpg"
+          alt="A&L Bakes"
+          style={{
+            width: 100,
+            height: 100,
+            borderRadius: "50%",
+            objectFit: "cover",
+          }}
+        />
+      </div>
       <h1>Your Cart</h1>
 
       <div style={{ display: "grid", gap: 12, marginTop: 12 }}>
@@ -49,7 +72,7 @@ export default function Cart() {
               <input
                 type="number"
                 min="1"
-                max="99"
+                max={maxQtyPerItem}
                 value={it.qty}
                 onChange={(e) => setQty(it._key, e.target.value)}
                 style={{ width: 70, padding: 8 }}

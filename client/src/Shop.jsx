@@ -15,7 +15,25 @@ export default function Shop() {
   const [sort, setSort] = useState("newest");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
-  const { addItem } = useCart();
+  const { items, addItem, removeItem, setQty, maxQtyPerItem } = useCart();
+
+  // Helper to get quantity of a product in cart (with default customisation)
+  const getProductQty = (productId) => {
+    const key = JSON.stringify({
+      productId,
+      customisation: { size: "Medium", flavour: "Vanilla", message: "" },
+    });
+    const item = items.find((it) => it._key === key);
+    return item ? item.qty : 0;
+  };
+
+  // Helper to get the cart key for a product
+  const getCartKey = (productId) => {
+    return JSON.stringify({
+      productId,
+      customisation: { size: "Medium", flavour: "Vanilla", message: "" },
+    });
+  };
 
 
   useEffect(() => {
@@ -160,15 +178,76 @@ export default function Shop() {
 
                 {p.description && <p style={{ color: "#bbb", fontSize: 13 }}>{p.description}</p>}
 
-                <button
-  onClick={() =>
-    addItem(p, { size: "Medium", flavour: "Vanilla", message: "" }, 1)
-  }
-  style={{ marginTop: 10, width: "100%", padding: 10, borderRadius: 12 }}
->
-  Add to Cart
-</button>
-
+                {getProductQty(p.id) === 0 ? (
+                  <button
+                    onClick={() =>
+                      addItem(p, { size: "Medium", flavour: "Vanilla", message: "" }, 1)
+                    }
+                    style={{ marginTop: 10, width: "100%", padding: 10, borderRadius: 12 }}
+                  >
+                    Add to Cart
+                  </button>
+                ) : (
+                  <div
+                    style={{
+                      marginTop: 10,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 12,
+                      background: "var(--color-bg-secondary)",
+                      borderRadius: 12,
+                      padding: 6,
+                    }}
+                  >
+                    <button
+                      onClick={() => {
+                        const qty = getProductQty(p.id);
+                        if (qty <= 1) {
+                          removeItem(getCartKey(p.id));
+                        } else {
+                          setQty(getCartKey(p.id), qty - 1);
+                        }
+                      }}
+                      style={{
+                        width: 36,
+                        height: 36,
+                        borderRadius: 8,
+                        border: "1px solid var(--color-border)",
+                        background: "transparent",
+                        cursor: "pointer",
+                        fontSize: 18,
+                        fontWeight: 600,
+                      }}
+                    >
+                      -
+                    </button>
+                    <span style={{ fontWeight: 600, minWidth: 24, textAlign: "center" }}>
+                      {getProductQty(p.id)}
+                    </span>
+                    <button
+                      onClick={() =>
+                        addItem(p, { size: "Medium", flavour: "Vanilla", message: "" }, 1)
+                      }
+                      disabled={getProductQty(p.id) >= maxQtyPerItem}
+                      style={{
+                        width: 36,
+                        height: 36,
+                        borderRadius: 8,
+                        border: "1px solid var(--color-border)",
+                        background: getProductQty(p.id) >= maxQtyPerItem ? "var(--color-border)" : "var(--color-primary)",
+                        color: "#000",
+                        cursor: getProductQty(p.id) >= maxQtyPerItem ? "not-allowed" : "pointer",
+                        fontSize: 18,
+                        fontWeight: 600,
+                        opacity: getProductQty(p.id) >= maxQtyPerItem ? 0.5 : 1,
+                      }}
+                      title={getProductQty(p.id) >= maxQtyPerItem ? `Max ${maxQtyPerItem} per item` : "Add one more"}
+                    >
+                      +
+                    </button>
+                  </div>
+                )}
               </div>
             ))}
           </div>

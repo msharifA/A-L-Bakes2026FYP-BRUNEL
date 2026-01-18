@@ -20,6 +20,17 @@ export default function Home() {
     <div style={{ maxWidth: 1100, margin: "0 auto", padding: 16 }}>
       {/* HERO */}
       <section style={{ padding: "60px 0", textAlign: "center" }}>
+        <img
+          src="/src/assets/logo.jpg"
+          alt="A&L Bakes"
+          style={{
+            width: 200,
+            height: 200,
+            borderRadius: "50%",
+            objectFit: "cover",
+            marginBottom: 24,
+          }}
+        />
         <h1 style={{ fontSize: 42, marginBottom: 12 }}>Freshly Baked, Made to Order</h1>
         <p style={{ color: "#bbb", marginBottom: 24 }}>
           Artisan cakes & pastries baked fresh for every occasion.
@@ -55,12 +66,24 @@ export default function Home() {
             }}
           >
             {featured.map((p) => (
-              <div
+              <Link
                 key={p.id}
+                to={`/product/${p.id}`}
                 style={{
                   border: "1px solid #333",
                   borderRadius: 14,
                   padding: 12,
+                  textDecoration: "none",
+                  color: "inherit",
+                  transition: "border-color 0.2s, transform 0.2s",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.borderColor = "var(--color-primary)";
+                  e.currentTarget.style.transform = "translateY(-2px)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = "#333";
+                  e.currentTarget.style.transform = "translateY(0)";
                 }}
               >
                 <div
@@ -82,7 +105,7 @@ export default function Home() {
                 <strong>{p.name}</strong>
                 <p style={{ fontSize: 13, color: "#bbb" }}>{p.description}</p>
                 <p>{formatGBP(p.price_pence)}</p>
-              </div>
+              </Link>
             ))}
           </div>
         )}
@@ -109,8 +132,8 @@ export default function Home() {
         <span>© A&L Bakes</span>
         <div style={{ display: "flex", gap: 12 }}>
           <Link to="/menu">Menu</Link>
-          <a href="#">Contact</a>
-          <a href="#">About</a>
+          <Link to="/contact">Contact</Link>
+          <Link to="/about">About</Link>
         </div>
       </footer>
     </div>

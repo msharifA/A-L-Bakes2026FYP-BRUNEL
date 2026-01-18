@@ -5,13 +5,21 @@ import Stripe from "stripe";
 import { pool } from "./db.js";
 import cookieParser from "cookie-parser";
 import authRoutes from "./routes/auth.routes.js";
+import customerAuthRoutes from "./routes/customer.auth.routes.js";
 import { requireAdmin } from "./middleware/requireAdmin.js";
+import { requireCustomer } from "./middleware/requireCustomer.js";
 
 
 // ✅ NEW: route modules
 import ordersRoutes from "./routes/orders.routes.js";
 import webhookRoutes from "./routes/webhooks.routes.js";
 import adminOrdersRoutes from "./routes/admin.orders.routes.js";
+import reviewsRoutes from "./routes/reviews.routes.js";
+import adminReviewsRoutes from "./routes/admin.reviews.routes.js";
+import adminUsersRoutes from "./routes/admin.users.routes.js";
+import adminProductsRoutes from "./routes/admin.products.routes.js";
+import reviewReportsRoutes from "./routes/review.reports.routes.js";
+import salesReportsRoutes from "./routes/sales.reports.routes.js";
 
 console.log("ENV PORT =", process.env.PORT);
 console.log("CWD =", process.cwd());
@@ -132,7 +140,12 @@ const getProductById = async (req, res) => {
 
 // --- routes on /api router ---
 api.use("/admin", requireAdmin, adminOrdersRoutes);
+api.use("/admin", requireAdmin, adminReviewsRoutes);
+api.use("/admin", requireAdmin, adminProductsRoutes);
+api.use("/admin", requireAdmin, salesReportsRoutes);
 api.use("/auth", authRoutes);
+api.use("/auth/customer", customerAuthRoutes);
+api.use("/auth/admin", adminUsersRoutes);
 
 api.get("/health", health);
 api.get("/version", version);
@@ -143,6 +156,8 @@ api.get("/products/featured", getFeaturedProducts);
 api.get("/products/:id", getProductById);
 
 api.use("/orders", ordersRoutes);
+api.use(reviewsRoutes);
+api.use(reviewReportsRoutes);
 
 // Stripe: create checkout session
 api.post("/checkout/create-session", async (req, res) => {
