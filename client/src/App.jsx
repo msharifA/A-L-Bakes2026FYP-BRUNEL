@@ -1,101 +1,179 @@
 import { useEffect, useState } from "react";
-import reactLogo from "./assets/react.svg";
-import viteLogo from "/vite.svg";
-import "./App.css";
+import { BrowserRouter, Routes, Route, Link } from "react-router-dom";
+import { checkAuth } from "./api/auth";
+import { useCart } from "./cart/CartContext";
+import { useAuth } from "./context/AuthContext";
+import Home from "./Home";
+import Shop from "./Shop";
+import ProductDetail from "./ProductDetail";
+import Cart from "./Cart";
+import Checkout from "./Checkout";
+import CheckoutReview from "./CheckoutReview";
+import OrderSuccess from "./OrderSuccess";
+import TrackOrder from "./TrackOrder";
+import AdminLogin from "./AdminLogin";
+import AdminDashboard from "./AdminDashboard";
+import AdminReviews from "./AdminReviews";
+import About from "./About";
+import Contact from "./Contact";
+import CustomerLogin from "./CustomerLogin";
+import CustomerRegister from "./CustomerRegister";
+import ForgotPassword from "./ForgotPassword";
+import ResetPassword from "./ResetPassword";
+import AdminRegister from "./AdminRegister";
+import AdminApprovalRequests from "./AdminApprovalRequests";
+import AdminProducts from "./AdminProducts";
+import AdminProductForm from "./AdminProductForm";
+import AdminReviewReports from "./AdminReviewReports";
+import AdminSalesReports from "./AdminSalesReports";
 
-function App() {
-  const [count, setCount] = useState(0);
-  const [health, setHealth] = useState("—");
-  const [version, setVersion] = useState("—");
-  const [error, setError] = useState("");
+function NavBar() {
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [authChecked, setAuthChecked] = useState(false);
+  const { items } = useCart();
+  const { customer, isAuthenticated, logout } = useAuth();
 
-  // Prefer env base URL if present (e.g., local dev), otherwise use '/api' for CloudFront routing in prod
-  const apiBase = import.meta.env?.VITE_API_BASE_URL || "/api";
+  const cartCount = items.reduce((sum, item) => sum + item.qty, 0);
 
   useEffect(() => {
-    // auto-check health once on load
-    fetch(`${apiBase}/health`)
-      .then((r) => r.text())
-      .then((txt) => {
-        console.log("Health check:", txt);
-        setHealth(txt);
-      })
-      .catch((e) => {
-        console.error("Health error:", e);
-        setError(String(e));
-      });
+    checkAuth().then(({ authenticated }) => {
+      setIsAdmin(authenticated);
+      setAuthChecked(true);
+    });
+  }, []);
 
-    // also grab version (optional)
-    fetch(`${apiBase}/version`)
-      .then((r) => r.json())
-      .then((data) => {
-        console.log("Version:", data);
-        setVersion(JSON.stringify(data));
-      })
-      .catch((e) => {
-        console.error("Version error:", e);
-        setError((prev) => prev || String(e));
-      });
-  }, [apiBase]);
-
-  const checkAgain = async () => {
-    setError("");
-    try {
-      const h = await fetch(`${apiBase}/health`).then((r) => r.text());
-      setHealth(h);
-      const v = await fetch(`${apiBase}/version`).then((r) => r.json());
-      setVersion(JSON.stringify(v));
-    } catch (e) {
-      setError(String(e));
-    }
+  const handleLogout = async () => {
+    await logout();
   };
 
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-
-      <h1>Vite + React</h1>
-
-      <div className="card">
-        <button onClick={() => setCount((c) => c + 1)}>count is {count}</button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-
-      <hr />
-
-      <div className="card">
-        <h2>API Connectivity</h2>
-        <p>
-          <strong>apiBase:</strong> <code>{apiBase}</code>
-        </p>
-        <p>
-          <strong>/health:</strong> <code>{health}</code>
-        </p>
-        <p>
-          <strong>/version:</strong> <code>{version}</code>
-        </p>
-        {error && (
-          <p style={{ color: "tomato" }}>
-            <strong>Error:</strong> {error}
-          </p>
+    <nav
+      style={{
+        padding: "10px 24px",
+        display: "flex",
+        gap: 20,
+        alignItems: "center",
+        background: "var(--color-bg-card)",
+        borderBottom: "1px solid var(--color-border)",
+        boxShadow: "var(--shadow-sm)",
+        position: "sticky",
+        top: 0,
+        zIndex: 100,
+      }}
+    >
+      <Link to="/" style={{ display: "flex", alignItems: "center" }}>
+        <img
+          src="/src/assets/logo.jpg"
+          alt="A&L Bakes"
+          style={{
+            width: 45,
+            height: 45,
+            borderRadius: "50%",
+            objectFit: "cover",
+          }}
+        />
+      </Link>
+      <Link to="/">Home</Link>
+      <Link to="/menu">Menu</Link>
+      <Link to="/cart" style={{ position: "relative" }}>
+        Cart
+        {cartCount > 0 && (
+          <span
+            style={{
+              position: "absolute",
+              top: -8,
+              right: -12,
+              background: "var(--color-primary)",
+              color: "#000",
+              fontSize: 11,
+              fontWeight: 700,
+              borderRadius: "50%",
+              width: 18,
+              height: 18,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            {cartCount > 99 ? "99+" : cartCount}
+          </span>
         )}
-        <button onClick={checkAgain}>Check API again</button>
-      </div>
+      </Link>
 
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
+      <div style={{ marginLeft: "auto", display: "flex", gap: 16, alignItems: "center" }}>
+        {isAuthenticated ? (
+          <>
+            <span style={{ color: "var(--color-text-muted)", fontSize: 14 }}>
+              Hi, {customer?.firstName}
+            </span>
+            <button
+              onClick={handleLogout}
+              style={{
+                padding: "6px 12px",
+                borderRadius: 8,
+                background: "transparent",
+                border: "1px solid var(--color-border)",
+                color: "var(--color-text)",
+                cursor: "pointer",
+                fontSize: 14,
+              }}
+            >
+              Logout
+            </button>
+          </>
+        ) : (
+          <Link
+            to="/login"
+            style={{
+              padding: "6px 14px",
+              borderRadius: 8,
+              background: "var(--color-primary)",
+              color: "#000",
+              fontWeight: 600,
+              textDecoration: "none",
+              fontSize: 14,
+            }}
+          >
+            Login
+          </Link>
+        )}
+        {authChecked && isAdmin && <Link to="/admin">Admin</Link>}
+      </div>
+    </nav>
   );
 }
 
-export default App;
+export default function App() {
+  return (
+    <BrowserRouter>
+      <NavBar />
+
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/menu" element={<Shop />} />
+        <Route path="/product/:id" element={<ProductDetail />} />
+        <Route path="/cart" element={<Cart />} />
+        <Route path="/checkout" element={<Checkout />} />
+        <Route path="/checkout/review" element={<CheckoutReview />} />
+        <Route path="/order-success" element={<OrderSuccess />} />
+        <Route path="/track/:orderId" element={<TrackOrder />} />
+        <Route path="/admin/login" element={<AdminLogin />} />
+        <Route path="/admin" element={<AdminDashboard />} />
+        <Route path="/admin/reviews" element={<AdminReviews />} />
+        <Route path="/about" element={<About />} />
+        <Route path="/contact" element={<Contact />} />
+        <Route path="/login" element={<CustomerLogin />} />
+        <Route path="/register" element={<CustomerRegister />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password/:token" element={<ResetPassword />} />
+        <Route path="/admin/register" element={<AdminRegister />} />
+        <Route path="/admin/approvals" element={<AdminApprovalRequests />} />
+        <Route path="/admin/products" element={<AdminProducts />} />
+        <Route path="/admin/products/new" element={<AdminProductForm />} />
+        <Route path="/admin/products/:id/edit" element={<AdminProductForm />} />
+        <Route path="/admin/review-reports" element={<AdminReviewReports />} />
+        <Route path="/admin/sales" element={<AdminSalesReports />} />
+      </Routes>
+    </BrowserRouter>
+  );
+}
