@@ -189,9 +189,13 @@ export default function AdminDashboard() {
       >
         <h1 style={{ margin: 0 }}>Admin Dashboard</h1>
 
-        <div style={{ display: "flex", gap: 12 }}>
+        <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+          <Link to="/admin/products">Products</Link>
           <Link to="/admin/reviews">Reviews</Link>
-          <Link to="/shop">Back to Menu</Link>
+          <Link to="/admin/review-reports">Reports</Link>
+          <Link to="/admin/sales">Sales</Link>
+          <Link to="/admin/approvals">Approvals</Link>
+          <Link to="/menu">Menu</Link>
           <button onClick={onLogout}>Logout</button>
         </div>
       </div>

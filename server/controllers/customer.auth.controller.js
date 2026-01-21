@@ -260,9 +260,9 @@ export async function resetPassword(req, res) {
       return res.status(400).json({ error: "Password must be at least 8 characters" });
     }
 
-    // Find valid token
+    // Find valid token and get current password hash
     const result = await pool.query(
-      `SELECT prt.id, prt.user_id, u.email
+      `SELECT prt.id, prt.user_id, u.email, u.password_hash
        FROM password_reset_tokens prt
        JOIN users u ON u.id = prt.user_id
        WHERE prt.token = $1
@@ -276,7 +276,13 @@ export async function resetPassword(req, res) {
       return res.status(400).json({ error: "Invalid or expired reset token" });
     }
 
-    const { id: tokenId, user_id: userId } = result.rows[0];
+    const { id: tokenId, user_id: userId, password_hash: currentHash } = result.rows[0];
+
+    // Check if new password is the same as the current password
+    const isSamePassword = await bcrypt.compare(newPassword, currentHash);
+    if (isSamePassword) {
+      return res.status(400).json({ error: "New password must be different from your current password" });
+    }
 
     // Hash new password
     const passwordHash = await bcrypt.hash(newPassword, BCRYPT_ROUNDS);
