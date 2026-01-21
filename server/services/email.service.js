@@ -86,9 +86,12 @@ If you didn't request a password reset, you can safely ignore this email.
 
   // In development, log the email instead of sending
   if (process.env.NODE_ENV !== "production" && !process.env.SMTP_USER) {
-    console.log("📧 Password Reset Email (dev mode):");
+    console.log("\n========================================");
+    console.log("📧 PASSWORD RESET EMAIL (dev mode)");
+    console.log("========================================");
     console.log("To:", email);
     console.log("Reset URL:", resetUrl);
+    console.log("========================================\n");
     return { messageId: "dev-mode", resetUrl };
   }
 

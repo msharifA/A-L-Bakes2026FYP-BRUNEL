@@ -8,6 +8,7 @@ export default function CustomerLogin() {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -30,7 +31,7 @@ export default function CustomerLogin() {
     <div style={{ maxWidth: 450, margin: "0 auto", padding: 16 }}>
       <div style={{ textAlign: "center", marginBottom: 24 }}>
         <img
-          src="/src/assets/logo.jpg"
+          src="/logo.jpg"
           alt="A&L Bakes"
           style={{
             width: 100,
@@ -84,14 +85,34 @@ export default function CustomerLogin() {
             <label style={{ display: "block", marginBottom: 6, fontWeight: 500 }}>
               Password
             </label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Enter your password"
-              required
-              style={{ padding: 12, width: "100%" }}
-            />
+            <div style={{ position: "relative" }}>
+              <input
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Enter your password"
+                required
+                style={{ padding: 12, width: "100%", paddingRight: 50 }}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                style={{
+                  position: "absolute",
+                  right: 12,
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  padding: 4,
+                  color: "var(--color-text-muted)",
+                  fontSize: 13,
+                }}
+              >
+                {showPassword ? "Hide" : "Show"}
+              </button>
+            </div>
           </div>
 
           <div style={{ marginBottom: 16, textAlign: "right" }}>

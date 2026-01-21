@@ -1,6 +1,4 @@
-import { useEffect, useState } from "react";
 import { BrowserRouter, Routes, Route, Link } from "react-router-dom";
-import { checkAuth } from "./api/auth";
 import { useCart } from "./cart/CartContext";
 import { useAuth } from "./context/AuthContext";
 import Home from "./Home";
@@ -28,19 +26,10 @@ import AdminReviewReports from "./AdminReviewReports";
 import AdminSalesReports from "./AdminSalesReports";
 
 function NavBar() {
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [authChecked, setAuthChecked] = useState(false);
   const { items } = useCart();
   const { customer, isAuthenticated, logout } = useAuth();
 
   const cartCount = items.reduce((sum, item) => sum + item.qty, 0);
-
-  useEffect(() => {
-    checkAuth().then(({ authenticated }) => {
-      setIsAdmin(authenticated);
-      setAuthChecked(true);
-    });
-  }, []);
 
   const handleLogout = async () => {
     await logout();
@@ -63,7 +52,7 @@ function NavBar() {
     >
       <Link to="/" style={{ display: "flex", alignItems: "center" }}>
         <img
-          src="/src/assets/logo.jpg"
+          src="/logo.jpg"
           alt="A&L Bakes"
           style={{
             width: 45,
@@ -137,7 +126,6 @@ function NavBar() {
             Login
           </Link>
         )}
-        {authChecked && isAdmin && <Link to="/admin">Admin</Link>}
       </div>
     </nav>
   );

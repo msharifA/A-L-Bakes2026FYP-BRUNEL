@@ -5,7 +5,7 @@ export default function Contact() {
     <div style={{ maxWidth: 900, margin: "0 auto", padding: 16 }}>
       <div style={{ textAlign: "center", marginBottom: 32 }}>
         <img
-          src="/src/assets/logo.jpg"
+          src="/logo.jpg"
           alt="A&L Bakes"
           style={{
             width: 120,
