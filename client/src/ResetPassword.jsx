@@ -43,7 +43,7 @@ export default function ResetPassword() {
       <div style={{ maxWidth: 450, margin: "0 auto", padding: 16 }}>
         <div style={{ textAlign: "center", marginBottom: 24 }}>
           <img
-            src="/src/assets/logo.jpg"
+            src="/logo.jpg"
             alt="A&L Bakes"
             style={{
               width: 100,
@@ -101,7 +101,7 @@ export default function ResetPassword() {
     <div style={{ maxWidth: 450, margin: "0 auto", padding: 16 }}>
       <div style={{ textAlign: "center", marginBottom: 24 }}>
         <img
-          src="/src/assets/logo.jpg"
+          src="/logo.jpg"
           alt="A&L Bakes"
           style={{
             width: 100,

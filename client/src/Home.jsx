@@ -21,7 +21,7 @@ export default function Home() {
       {/* HERO */}
       <section style={{ padding: "60px 0", textAlign: "center" }}>
         <img
-          src="/src/assets/logo.jpg"
+          src="/logo.jpg"
           alt="A&L Bakes"
           style={{
             width: 200,
