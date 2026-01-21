@@ -10,7 +10,7 @@ export default function Cart() {
     return (
       <div style={{ padding: 16, maxWidth: 900, margin: "0 auto", textAlign: "center" }}>
         <img
-          src="/src/assets/logo.jpg"
+          src="/logo.jpg"
           alt="A&L Bakes"
           style={{
             width: 120,
@@ -31,7 +31,7 @@ export default function Cart() {
     <div style={{ padding: 16, maxWidth: 900, margin: "0 auto" }}>
       <div style={{ textAlign: "center", marginBottom: 16 }}>
         <img
-          src="/src/assets/logo.jpg"
+          src="/logo.jpg"
           alt="A&L Bakes"
           style={{
             width: 100,
