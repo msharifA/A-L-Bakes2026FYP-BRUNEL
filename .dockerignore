@@ -1,0 +1,28 @@
+# Client folder (not needed for backend)
+client/
+
+# Git
+.git/
+.gitignore
+
+# IDE
+.idea/
+.vscode/
+
+# EB config
+.elasticbeanstalk/
+
+# Logs
+*.log
+
+# Node modules will be installed in container
+server/node_modules/
+node_modules/
+
+# Environment files
+.env*
+*.env
+
+# Misc
+*.md
+Dockerrun.aws.json.bak

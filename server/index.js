@@ -151,6 +151,249 @@ api.get("/health", health);
 api.get("/version", version);
 api.get("/db-ping", dbPing);
 
+// Debug endpoint to verify deployment
+api.get("/debug-routes", (_req, res) => {
+  res.json({
+    deployed: new Date().toISOString(),
+    version: "2026-01-20-v3",
+    routes: ["products", "products/featured", "products/:id"],
+    nodeVersion: process.version,
+  });
+});
+
+// TEMPORARY: Fix schema migration
+api.post("/fix-schema", async (req, res) => {
+  const secret = req.query.secret;
+  if (secret !== "albakes2026migrate") {
+    return res.status(403).json({ error: "Invalid secret" });
+  }
+
+  const results = [];
+  try {
+    // Add missing columns to orders table
+    await pool.query(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS currency VARCHAR(10) DEFAULT 'gbp'`);
+    await pool.query(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS subtotal_pence INTEGER DEFAULT 0`);
+    await pool.query(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS delivery_pence INTEGER DEFAULT 0`);
+    await pool.query(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS stripe_payment_intent_id VARCHAR(255)`);
+    results.push("orders columns added");
+
+    // Add unique index on stripe_session_id (CREATE UNIQUE INDEX IF NOT EXISTS is valid PostgreSQL)
+    await pool.query(`CREATE UNIQUE INDEX IF NOT EXISTS idx_orders_stripe_session_unique ON orders(stripe_session_id)`);
+    results.push("stripe_session_id unique index created");
+
+    // Add missing columns to order_items table
+    await pool.query(`ALTER TABLE order_items ADD COLUMN IF NOT EXISTS name VARCHAR(255)`);
+    await pool.query(`ALTER TABLE order_items ADD COLUMN IF NOT EXISTS unit_price_pence INTEGER DEFAULT 0`);
+    await pool.query(`ALTER TABLE order_items ADD COLUMN IF NOT EXISTS line_total_pence INTEGER DEFAULT 0`);
+    results.push("order_items table updated");
+
+    // Add missing columns to order_events table
+    await pool.query(`ALTER TABLE order_events ADD COLUMN IF NOT EXISTS type VARCHAR(50)`);
+    results.push("order_events table updated");
+
+    res.json({ success: true, results });
+  } catch (e) {
+    console.error("Fix schema error:", e);
+    res.status(500).json({ error: e.message, results });
+  }
+});
+
+// TEMPORARY: Run migrations via API (remove after first run)
+api.post("/run-migrations", async (req, res) => {
+  const secret = req.query.secret;
+  if (secret !== "albakes2026migrate") {
+    return res.status(403).json({ error: "Invalid secret" });
+  }
+
+  const results = [];
+  try {
+    // Products table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS products (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        description TEXT,
+        price_pence INTEGER NOT NULL,
+        image_url VARCHAR(500),
+        category VARCHAR(100),
+        is_featured BOOLEAN DEFAULT FALSE,
+        is_active BOOLEAN DEFAULT TRUE,
+        created_at TIMESTAMP DEFAULT NOW(),
+        updated_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
+    results.push("products table created");
+
+    // Orders table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS orders (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        customer_email VARCHAR(255) NOT NULL,
+        customer_name VARCHAR(255),
+        status VARCHAR(50) DEFAULT 'pending',
+        payment_status VARCHAR(50) DEFAULT 'pending',
+        total_pence INTEGER NOT NULL,
+        delivery_method VARCHAR(50) DEFAULT 'pickup',
+        delivery_date DATE,
+        stripe_session_id VARCHAR(255),
+        stripe_payment_intent VARCHAR(255),
+        created_at TIMESTAMP DEFAULT NOW(),
+        updated_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
+    results.push("orders table created");
+
+    // Order Items table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS order_items (
+        id SERIAL PRIMARY KEY,
+        order_id UUID NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+        product_id INTEGER REFERENCES products(id) ON DELETE SET NULL,
+        product_name VARCHAR(255) NOT NULL,
+        quantity INTEGER NOT NULL DEFAULT 1,
+        price_pence INTEGER NOT NULL,
+        customisation JSONB,
+        created_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
+    results.push("order_items table created");
+
+    // Order Events table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS order_events (
+        id SERIAL PRIMARY KEY,
+        order_id UUID NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+        status VARCHAR(50),
+        message TEXT,
+        created_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
+    results.push("order_events table created");
+
+    // Product Reviews table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS product_reviews (
+        id SERIAL PRIMARY KEY,
+        product_id INTEGER NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+        order_id UUID REFERENCES orders(id) ON DELETE SET NULL,
+        customer_email VARCHAR(255) NOT NULL,
+        customer_name VARCHAR(255) NOT NULL,
+        rating INTEGER NOT NULL CHECK (rating >= 1 AND rating <= 5),
+        review_text TEXT NOT NULL,
+        verified_purchase BOOLEAN DEFAULT FALSE,
+        status VARCHAR(50) DEFAULT 'pending',
+        created_at TIMESTAMP DEFAULT NOW(),
+        updated_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
+    results.push("product_reviews table created");
+
+    // Review Helpful Votes table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS review_helpful_votes (
+        id SERIAL PRIMARY KEY,
+        review_id INTEGER NOT NULL REFERENCES product_reviews(id) ON DELETE CASCADE,
+        session_id VARCHAR(255) NOT NULL,
+        created_at TIMESTAMP DEFAULT NOW(),
+        UNIQUE(review_id, session_id)
+      )
+    `);
+    results.push("review_helpful_votes table created");
+
+    // Users table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS users (
+        id SERIAL PRIMARY KEY,
+        email VARCHAR(255) NOT NULL UNIQUE,
+        password_hash VARCHAR(255) NOT NULL,
+        first_name VARCHAR(100) NOT NULL,
+        last_name VARCHAR(100) NOT NULL,
+        role VARCHAR(50) DEFAULT 'customer',
+        is_active BOOLEAN DEFAULT TRUE,
+        admin_approved BOOLEAN DEFAULT FALSE,
+        approved_by INTEGER REFERENCES users(id),
+        created_at TIMESTAMP DEFAULT NOW(),
+        updated_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
+    results.push("users table created");
+
+    // Password Reset Tokens table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS password_reset_tokens (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+        token VARCHAR(255) NOT NULL UNIQUE,
+        expires_at TIMESTAMP NOT NULL,
+        used_at TIMESTAMP,
+        created_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
+    results.push("password_reset_tokens table created");
+
+    // Saved Carts table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS saved_carts (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE UNIQUE,
+        cart_data JSONB NOT NULL,
+        updated_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
+    results.push("saved_carts table created");
+
+    // Review Reports table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS review_reports (
+        id SERIAL PRIMARY KEY,
+        review_id INTEGER REFERENCES product_reviews(id) ON DELETE CASCADE,
+        reporter_email VARCHAR(255) NOT NULL,
+        reason VARCHAR(100) NOT NULL,
+        details TEXT,
+        status VARCHAR(50) DEFAULT 'pending',
+        reviewed_by INTEGER REFERENCES users(id),
+        admin_notes TEXT,
+        created_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
+    results.push("review_reports table created");
+
+    // Create indexes
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_orders_customer_email ON orders(customer_email)`);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status)`);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_orders_created_at ON orders(created_at DESC)`);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_order_items_order_id ON order_items(order_id)`);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_order_events_order_id ON order_events(order_id)`);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_products_category ON products(category)`);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_products_is_featured ON products(is_featured)`);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_product_reviews_product_id ON product_reviews(product_id)`);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_product_reviews_status ON product_reviews(status)`);
+    results.push("indexes created");
+
+    // Insert sample products if table is empty
+    const productCount = await pool.query("SELECT COUNT(*) FROM products");
+    if (parseInt(productCount.rows[0].count) === 0) {
+      await pool.query(`
+        INSERT INTO products (name, description, price_pence, image_url, category, is_featured, is_active) VALUES
+        ('Chocolate Fudge Cake', 'Rich and decadent chocolate cake with fudge frosting', 2500, '/images/chocolate-cake.jpg', 'Cakes', TRUE, TRUE),
+        ('Victoria Sponge', 'Classic British sponge with jam and cream', 2000, '/images/victoria-sponge.jpg', 'Cakes', TRUE, TRUE),
+        ('Lemon Drizzle Cake', 'Zesty lemon cake with tangy glaze', 1800, '/images/lemon-drizzle.jpg', 'Cakes', TRUE, TRUE),
+        ('Chocolate Chip Cookies (6)', 'Freshly baked cookies with chocolate chips', 800, '/images/cookies.jpg', 'Cookies', FALSE, TRUE),
+        ('Cupcakes (Box of 6)', 'Assorted cupcakes with buttercream frosting', 1500, '/images/cupcakes.jpg', 'Cupcakes', TRUE, TRUE),
+        ('Brownies (4 pack)', 'Fudgy chocolate brownies', 1000, '/images/brownies.jpg', 'Brownies', FALSE, TRUE)
+      `);
+      results.push("sample products inserted");
+    } else {
+      results.push("products already exist, skipped sample data");
+    }
+
+    res.json({ success: true, results });
+  } catch (e) {
+    console.error("Migration error:", e);
+    res.status(500).json({ error: e.message, results });
+  }
+});
+
 api.get("/products", getProducts);
 api.get("/products/featured", getFeaturedProducts);
 api.get("/products/:id", getProductById);
