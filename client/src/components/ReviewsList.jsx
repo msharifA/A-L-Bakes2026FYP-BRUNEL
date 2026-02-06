@@ -20,10 +20,6 @@ export default function ReviewsList({ productId }) {
   const [loading, setLoading] = useState(true);
   const [sort, setSort] = useState("newest");
 
-  useEffect(() => {
-    loadReviews();
-  }, [productId, sort]);
-
   async function loadReviews() {
     try {
       setLoading(true);
@@ -37,6 +33,11 @@ export default function ReviewsList({ productId }) {
       setLoading(false);
     }
   }
+
+  useEffect(() => {
+    loadReviews();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [productId, sort]);
 
   if (loading) return <div style={{ padding: "20px 0" }}><div className="spinner"></div> Loading reviews...</div>;
 
