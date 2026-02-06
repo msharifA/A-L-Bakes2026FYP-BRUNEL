@@ -146,17 +146,17 @@ export default function Contact() {
         </div>
       </div>
 
-      {/* Instagram */}
+      {/* Facebook */}
       <div
         className="card"
         style={{ padding: 24, marginTop: 24, textAlign: "center" }}
       >
-        <h3 style={{ marginTop: 0 }}>Find Us on Instagram</h3>
+        <h3 style={{ marginTop: 0 }}>Find Us on Facebook</h3>
         <p style={{ color: "var(--color-text-muted)", marginBottom: 16 }}>
           Follow us for our latest creations, behind-the-scenes baking, and special offers!
         </p>
         <a
-          href="https://instagram.com/al.bakes.uk"
+          href="https://www.facebook.com/people/AL-Bakes/61587012191793/"
           target="_blank"
           rel="noopener noreferrer"
           style={{
@@ -165,15 +165,15 @@ export default function Contact() {
             gap: 10,
             padding: "14px 24px",
             borderRadius: 12,
-            background: "linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888)",
+            background: "#1877F2",
             color: "#fff",
             fontWeight: 600,
             textDecoration: "none",
             fontSize: 16,
           }}
         >
-          <span style={{ fontSize: 24 }}>📸</span>
-          @al.bakes.uk
+          <span style={{ fontSize: 24 }}>👍</span>
+          A&L Bakes
         </a>
       </div>
     </div>
