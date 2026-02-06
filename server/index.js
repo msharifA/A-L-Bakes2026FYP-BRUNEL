@@ -20,6 +20,7 @@ import adminUsersRoutes from "./routes/admin.users.routes.js";
 import adminProductsRoutes from "./routes/admin.products.routes.js";
 import reviewReportsRoutes from "./routes/review.reports.routes.js";
 import salesReportsRoutes from "./routes/sales.reports.routes.js";
+import customerProfileRoutes from "./routes/customer.profile.routes.js";
 
 console.log("ENV PORT =", process.env.PORT);
 console.log("CWD =", process.cwd());
@@ -146,6 +147,7 @@ api.use("/admin", requireAdmin, salesReportsRoutes);
 api.use("/auth", authRoutes);
 api.use("/auth/customer", customerAuthRoutes);
 api.use("/auth/admin", adminUsersRoutes);
+api.use("/customer", requireCustomer, customerProfileRoutes);
 
 api.get("/health", health);
 api.get("/version", version);
@@ -185,6 +187,9 @@ api.post("/fix-schema", async (req, res) => {
     await pool.query(`ALTER TABLE order_items ADD COLUMN IF NOT EXISTS name VARCHAR(255)`);
     await pool.query(`ALTER TABLE order_items ADD COLUMN IF NOT EXISTS unit_price_pence INTEGER DEFAULT 0`);
     await pool.query(`ALTER TABLE order_items ADD COLUMN IF NOT EXISTS line_total_pence INTEGER DEFAULT 0`);
+    // Drop NOT NULL constraints from old columns (controller uses different column names)
+    await pool.query(`ALTER TABLE order_items ALTER COLUMN product_name DROP NOT NULL`);
+    await pool.query(`ALTER TABLE order_items ALTER COLUMN price_pence DROP NOT NULL`);
     results.push("order_items table updated");
 
     // Add missing columns to order_events table

@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { useCart } from "./cart/CartContext";
+import { useCart } from "./context/CartContext";
 
 const formatGBP = (pence) => `£${(pence / 100).toFixed(2)}`;
 

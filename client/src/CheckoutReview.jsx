@@ -1,6 +1,54 @@
+/**
+ * =============================================================================
+ * CHECKOUT REVIEW PAGE (STEP 2 OF 3) - STRIPE BOUNDARY
+ * =============================================================================
+ *
+ * PURPOSE:
+ * Shows order summary and handles the handoff to Stripe Checkout.
+ * This is the LAST page before leaving to Stripe's payment page.
+ *
+ * CHECKOUT FLOW:
+ * 1. /checkout → Customer enters details
+ * 2. /checkout/review (THIS PAGE) → Review order, click "Pay with Stripe"
+ * 3. Stripe Checkout → External Stripe-hosted payment page
+ * 4. /order-success → Post-payment confirmation
+ *
+ * STRIPE BOUNDARY EXPLANATION:
+ * This is called a "boundary" because it's where we transition from our
+ * application to Stripe's hosted checkout. Key security benefits:
+ *
+ * 1. SECURITY: Stripe handles all payment card details
+ *    - We NEVER see or store credit card numbers
+ *    - PCI compliance is Stripe's responsibility
+ *    - Reduces our security liability
+ *
+ * 2. TRUST: Customers see familiar Stripe UI
+ *    - They enter card on stripe.com domain
+ *    - Stripe's SSL certificate visible
+ *
+ * 3. FLEXIBILITY: Stripe handles payment methods
+ *    - Apple Pay, Google Pay, cards automatically
+ *    - 3D Secure authentication handled by Stripe
+ *
+ * HOW THE HANDOFF WORKS:
+ * 1. User clicks "Pay with Stripe" button
+ * 2. Frontend calls POST /api/checkout → backend
+ * 3. Backend creates Stripe Checkout Session with:
+ *    - Line items (products + prices)
+ *    - Customer email
+ *    - Success/cancel URLs
+ *    - Metadata (delivery method, date)
+ * 4. Stripe returns session URL
+ * 5. Frontend redirects: window.location.href = url
+ * 6. User pays on Stripe's hosted page
+ * 7. Stripe redirects back to /order-success?session_id=xxx
+ *
+ * =============================================================================
+ */
+
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { useCart } from "./cart/CartContext";
+import { useCart } from "./context/CartContext";
 import { createCheckoutSession } from "./api/checkout";
 
 const formatGBP = (pence) => `£${(pence / 100).toFixed(2)}`;
@@ -12,12 +60,17 @@ function nice(s) {
 }
 
 export default function CheckoutReview() {
+  // Get cart items and subtotal from global context
   const { items, subtotalPence } = useCart();
+
+  // Read customer details saved by previous checkout page
   const details = JSON.parse(localStorage.getItem("albakes_checkout_v1") || "null");
 
+  // Loading and error state for Stripe redirect
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
+  // Calculate delivery fee based on method
   const deliveryFeePence = useMemo(() => {
     return details?.deliveryMethod === "delivery" ? DELIVERY_FEE_PENCE : 0;
   }, [details]);
@@ -26,11 +79,28 @@ export default function CheckoutReview() {
     return subtotalPence + deliveryFeePence;
   }, [subtotalPence, deliveryFeePence]);
 
+  /**
+   * STRIPE HANDOFF FUNCTION
+   *
+   * This is where we leave our app and go to Stripe.
+   * Called when user clicks "Pay with Stripe" button.
+   */
   async function handlePay() {
     setSubmitting(true);
     setError("");
 
     try {
+      /**
+       * BUILD PAYLOAD FOR BACKEND
+       *
+       * We send cart items + customer details to backend.
+       * Backend validates and creates Stripe session.
+       *
+       * WHY NOT CREATE SESSION CLIENT-SIDE?
+       * - Stripe Secret Key must stay on server (security)
+       * - Backend validates prices against database (prevents tampering)
+       * - Backend can add metadata for order tracking
+       */
       const payload = {
         cartItems: items.map((it) => ({
           productId: it.productId ?? it.id,
@@ -48,7 +118,16 @@ export default function CheckoutReview() {
         },
       };
 
+      // Call backend to create Stripe session
       const { url } = await createCheckoutSession(payload);
+
+      /**
+       * REDIRECT TO STRIPE
+       *
+       * window.location.href performs a full page navigation.
+       * This takes user to Stripe's hosted checkout page.
+       * After payment, Stripe redirects back to our /order-success
+       */
       window.location.href = url;
     } catch (e) {
       setError(e.message || "Checkout failed");
