@@ -48,7 +48,7 @@
 
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { useCart } from "./context/CartContext";
+import { useCart } from "./hooks/useCart";
 import { createCheckoutSession } from "./api/checkout";
 
 const formatGBP = (pence) => `£${(pence / 100).toFixed(2)}`;
