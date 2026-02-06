@@ -1,23 +1,79 @@
+/**
+ * =============================================================================
+ * APP.JSX - MAIN APPLICATION ROUTING
+ * =============================================================================
+ *
+ * PURPOSE:
+ * This is the root component of the A&L Bakes React application.
+ * It defines all client-side routes and the global navigation bar.
+ *
+ * ROUTING ARCHITECTURE:
+ * Uses React Router v6 for client-side navigation. Routes are organized into:
+ *
+ * PUBLIC ROUTES (no auth required):
+ * - /              → Home page (landing)
+ * - /menu          → Product catalog (Shop)
+ * - /product/:id   → Individual product details
+ * - /cart          → Shopping cart
+ * - /about, /contact → Static pages
+ *
+ * CHECKOUT FLOW:
+ * - /checkout        → Customer details form (Step 1)
+ * - /checkout/review → Order review + Stripe redirect (Step 2)
+ * - /order-success   → Post-payment confirmation (Step 3)
+ * - /track/:orderId  → Order tracking page
+ *
+ * CUSTOMER AUTH:
+ * - /login           → Customer login
+ * - /register        → Customer registration
+ * - /forgot-password → Request password reset
+ * - /reset-password/:token → Set new password
+ *
+ * ADMIN ROUTES (protected by auth check in components):
+ * - /admin/login     → Admin login page
+ * - /admin           → Admin dashboard
+ * - /admin/products  → Product management (CRUD)
+ * - /admin/reviews   → Review moderation
+ * - /admin/sales     → Sales analytics
+ *
+ * WHY CLIENT-SIDE ROUTING?
+ * - Single Page Application (SPA) for fast navigation
+ * - No full page reloads between routes
+ * - State (cart, auth) persists across navigation
+ *
+ * =============================================================================
+ */
+
 import { BrowserRouter, Routes, Route, Link } from "react-router-dom";
-import { useCart } from "./cart/CartContext";
+import { useCart } from "./context/CartContext";
 import { useAuth } from "./context/AuthContext";
+
+// Page Components - grouped by feature area
+// PUBLIC PAGES
 import Home from "./Home";
 import Shop from "./Shop";
 import ProductDetail from "./ProductDetail";
 import Cart from "./Cart";
+import About from "./About";
+import Contact from "./Contact";
+
+// CHECKOUT FLOW
 import Checkout from "./Checkout";
 import CheckoutReview from "./CheckoutReview";
 import OrderSuccess from "./OrderSuccess";
 import TrackOrder from "./TrackOrder";
-import AdminLogin from "./AdminLogin";
-import AdminDashboard from "./AdminDashboard";
-import AdminReviews from "./AdminReviews";
-import About from "./About";
-import Contact from "./Contact";
+
+// CUSTOMER AUTH
 import CustomerLogin from "./CustomerLogin";
 import CustomerRegister from "./CustomerRegister";
 import ForgotPassword from "./ForgotPassword";
 import ResetPassword from "./ResetPassword";
+import CustomerProfile from "./CustomerProfile";
+
+// ADMIN PAGES
+import AdminLogin from "./AdminLogin";
+import AdminDashboard from "./AdminDashboard";
+import AdminReviews from "./AdminReviews";
 import AdminRegister from "./AdminRegister";
 import AdminApprovalRequests from "./AdminApprovalRequests";
 import AdminProducts from "./AdminProducts";
@@ -25,8 +81,24 @@ import AdminProductForm from "./AdminProductForm";
 import AdminReviewReports from "./AdminReviewReports";
 import AdminSalesReports from "./AdminSalesReports";
 
+/**
+ * NAVBAR COMPONENT
+ *
+ * Global navigation bar displayed on all pages.
+ *
+ * FEATURES:
+ * - Logo links to home
+ * - Cart icon with live item count badge
+ * - Conditional auth display (Login button vs user name + Logout)
+ *
+ * CONTEXT USAGE:
+ * - useCart() → Gets cart items to show count
+ * - useAuth() → Gets customer info and auth state
+ */
 function NavBar() {
+  // Cart context - used to display item count badge
   const { items } = useCart();
+  // Auth context - used for login/logout state
   const { customer, isAuthenticated, logout } = useAuth();
 
   const cartCount = items.reduce((sum, item) => sum + item.qty, 0);
@@ -92,9 +164,16 @@ function NavBar() {
       <div style={{ marginLeft: "auto", display: "flex", gap: 16, alignItems: "center" }}>
         {isAuthenticated ? (
           <>
-            <span style={{ color: "var(--color-text-muted)", fontSize: 14 }}>
+            <Link
+              to="/profile"
+              style={{
+                color: "var(--color-text)",
+                textDecoration: "none",
+                fontSize: 14,
+              }}
+            >
               Hi, {customer?.firstName}
-            </span>
+            </Link>
             <button
               onClick={handleLogout}
               style={{
@@ -131,29 +210,57 @@ function NavBar() {
   );
 }
 
+/**
+ * MAIN APP COMPONENT
+ *
+ * Root component that sets up:
+ * - BrowserRouter for client-side navigation
+ * - NavBar (always visible)
+ * - All route definitions
+ *
+ * NOTE: Context providers (CartProvider, AuthProvider) wrap this
+ * component in main.jsx to provide global state.
+ */
 export default function App() {
   return (
     <BrowserRouter>
+      {/* Global navigation - visible on all pages */}
       <NavBar />
 
+      {/* Route definitions - React Router v6 syntax */}
       <Routes>
+        {/* ===== PUBLIC PAGES ===== */}
         <Route path="/" element={<Home />} />
         <Route path="/menu" element={<Shop />} />
         <Route path="/product/:id" element={<ProductDetail />} />
         <Route path="/cart" element={<Cart />} />
-        <Route path="/checkout" element={<Checkout />} />
-        <Route path="/checkout/review" element={<CheckoutReview />} />
-        <Route path="/order-success" element={<OrderSuccess />} />
-        <Route path="/track/:orderId" element={<TrackOrder />} />
-        <Route path="/admin/login" element={<AdminLogin />} />
-        <Route path="/admin" element={<AdminDashboard />} />
-        <Route path="/admin/reviews" element={<AdminReviews />} />
         <Route path="/about" element={<About />} />
         <Route path="/contact" element={<Contact />} />
+
+        {/* ===== CHECKOUT FLOW ===== */}
+        {/* Step 1: Customer enters details */}
+        <Route path="/checkout" element={<Checkout />} />
+        {/* Step 2: Review order + redirect to Stripe */}
+        <Route path="/checkout/review" element={<CheckoutReview />} />
+        {/* Step 3: Post-payment success page */}
+        <Route path="/order-success" element={<OrderSuccess />} />
+        {/* Order tracking (linked from confirmation email) */}
+        <Route path="/track/:orderId" element={<TrackOrder />} />
+
+        {/* ===== CUSTOMER AUTH ===== */}
         <Route path="/login" element={<CustomerLogin />} />
         <Route path="/register" element={<CustomerRegister />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
+        {/* :token param comes from email reset link */}
         <Route path="/reset-password/:token" element={<ResetPassword />} />
+        {/* Customer profile with order history and reviews */}
+        <Route path="/profile" element={<CustomerProfile />} />
+
+        {/* ===== ADMIN ROUTES ===== */}
+        {/* Auth is checked inside each component (redirects if not admin) */}
+        <Route path="/admin/login" element={<AdminLogin />} />
+        <Route path="/admin" element={<AdminDashboard />} />
+        <Route path="/admin/reviews" element={<AdminReviews />} />
         <Route path="/admin/register" element={<AdminRegister />} />
         <Route path="/admin/approvals" element={<AdminApprovalRequests />} />
         <Route path="/admin/products" element={<AdminProducts />} />

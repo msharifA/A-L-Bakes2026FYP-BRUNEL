@@ -1,6 +1,6 @@
 
-A&L; Bakes – Deployment & Operations Guide
-Last updated: 22 Nov 2025
+A&L Bakes – Deployment & Operations Guide
+Last updated: 6 Feb 2026
 
 1. Overview
 This document describes how the A&L; Bakes platform is deployed and operated in AWS.
@@ -50,15 +50,19 @@ Triggers:
 - Manual workflow_dispatch
 Pipeline summary:
  1. Checkout repo
- 2. Configure AWS via OIDC
- 3. Login to ECR
- 4. Build Docker image
- 5. Tag & push image
- 6. Generate unique version
- 7. Render Dockerrun.aws.json
- 8. Package ZIP for Elastic Beanstalk
- 9. Create Application Version in EB
- 10. Update EB Environment
+ 2. Setup Node.js
+ 3. Install dependencies & run tests (npm ci && npm test)
+ 4. Configure AWS via OIDC
+ 5. Login to ECR
+ 6. Build Docker image
+ 7. Tag & push image
+ 8. Generate unique version
+ 9. Render Dockerrun.aws.json
+ 10. Package ZIP for Elastic Beanstalk
+ 11. Create Application Version in EB
+ 12. Update EB Environment
+
+Note: If tests fail, deployment stops and production remains unchanged.
 
 4. Frontend Deployment Flow (S3 + CloudFront)
 Workflow file: .github/workflows/deploy-frontend.yml
@@ -68,10 +72,16 @@ Triggers:
 Pipeline summary:
 1. Checkout repo
 2. Configure AWS via OIDC
-3. Install dependencies & build frontend
-4. Sync build to S3
-5. Create CloudFront invalidation
+3. Setup Node.js
+4. Install dependencies (npm ci)
+5. Run ESLint (npm run lint)
+6. Run tests (npm test)
+7. Build frontend (npm run build)
+8. Sync build to S3
+9. Create CloudFront invalidation
+
 Result:
+- If lint or tests fail, deployment stops
 - New frontend version goes live instantly
 - Old cached files are forced to refresh
 
@@ -93,6 +103,33 @@ Frontend Rollback: Restore older S3 object version and invalidate CloudFront.
 - RDS instance sized for moderate traffic
 - CloudFront reduces S3 transfer cost
 
-8. Future Improvements & Staging
+8. Testing
+
+8.1 Test Framework
+Both frontend and backend use Vitest for unit testing.
+
+8.2 Running Tests Locally
+Backend:
+  cd server && npm test
+
+Frontend:
+  cd client && npm test
+
+Watch mode (re-runs on file changes):
+  npm run test:watch
+
+8.3 Test Coverage
+Backend (server/tests/):
+- auth.test.js: Customer registration, login, logout validation
+
+Frontend (client/src/):
+- context/CartContext.test.jsx: Cart operations, quantity limits, persistence
+
+8.4 CI Integration
+Tests run automatically in GitHub Actions before deployment.
+If any test fails, deployment is blocked.
+
+9. Future Improvements & Staging
 - Create staging EB + RDS
 - Add monitoring alarms
+- Expand test coverage for checkout flow

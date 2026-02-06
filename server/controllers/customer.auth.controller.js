@@ -1,3 +1,6 @@
+// Customer Authentication Controller
+// Handles register, login, logout, password reset for customers
+
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
@@ -13,7 +16,7 @@ function cookieOptions() {
     secure: isProd,
     sameSite: isProd ? "none" : "lax",
     path: "/",
-    maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days for customers
+    maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
   };
 }
 
@@ -26,18 +29,17 @@ export async function customerRegister(req, res) {
       return res.status(400).json({ error: "All fields are required" });
     }
 
-    // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       return res.status(400).json({ error: "Invalid email format" });
     }
 
-    // Validate password strength
+    // Password strength check (OWASP recommends minimum 8 characters)
     if (password.length < 8) {
       return res.status(400).json({ error: "Password must be at least 8 characters" });
     }
 
-    // Check if email already exists
+    // Check for existing account (case-insensitive email comparison)
     const existing = await pool.query(
       "SELECT id FROM users WHERE LOWER(email) = LOWER($1)",
       [email]
@@ -46,10 +48,10 @@ export async function customerRegister(req, res) {
       return res.status(409).json({ error: "Email already registered" });
     }
 
-    // Hash password
+    // Hash password - bcrypt adds salt automatically
     const passwordHash = await bcrypt.hash(password, BCRYPT_ROUNDS);
 
-    // Insert user
+    // Insert new user - email stored lowercase for consistency
     const result = await pool.query(
       `INSERT INTO users (email, password_hash, first_name, last_name, role, is_active)
        VALUES (LOWER($1), $2, $3, $4, 'customer', TRUE)
@@ -59,16 +61,18 @@ export async function customerRegister(req, res) {
 
     const user = result.rows[0];
 
-    // Generate JWT token
+    // Generate JWT token for immediate login after registration
     const token = jwt.sign(
       { role: "customer", userId: user.id, email: user.email },
       process.env.JWT_SECRET,
       { expiresIn: "7d" }
     );
 
+    // Set auth cookie - user is now logged in
     res.cookie("albakes_customer", token, cookieOptions());
 
-    // Send welcome email (don't block response)
+    // Send welcome email asynchronously (don't block response)
+    // Uses AWS SES - see email.service.js
     sendWelcomeEmail(user.email, user.first_name).catch((e) =>
       console.error("Failed to send welcome email:", e)
     );
@@ -192,50 +196,36 @@ export async function customerMe(req, res) {
 export async function forgotPassword(req, res) {
   try {
     const { email } = req.body || {};
+    if (!email) return res.status(400).json({ error: "Email is required" });
 
-    if (!email) {
-      return res.status(400).json({ error: "Email is required" });
-    }
-
-    // Always return success to prevent email enumeration
+    // Always return same message (prevents email enumeration)
     const genericResponse = { ok: true, message: "If the email exists, a reset link will be sent" };
 
-    // Find user
     const result = await pool.query(
       "SELECT id, email FROM users WHERE LOWER(email) = LOWER($1) AND is_active = TRUE",
       [email]
     );
 
-    if (result.rows.length === 0) {
-      return res.json(genericResponse);
-    }
+    if (result.rows.length === 0) return res.json(genericResponse);
 
     const user = result.rows[0];
-
-    // Generate secure token
     const token = crypto.randomBytes(32).toString("hex");
     const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
 
-    // Invalidate existing tokens for this user
+    // Invalidate existing tokens
     await pool.query(
       "UPDATE password_reset_tokens SET used_at = NOW() WHERE user_id = $1 AND used_at IS NULL",
       [user.id]
     );
 
-    // Insert new token
     await pool.query(
       "INSERT INTO password_reset_tokens (user_id, token, expires_at) VALUES ($1, $2, $3)",
       [user.id, token, expiresAt]
     );
 
-    // Get user's first name for email
-    const userDetails = await pool.query(
-      "SELECT first_name FROM users WHERE id = $1",
-      [user.id]
-    );
+    const userDetails = await pool.query("SELECT first_name FROM users WHERE id = $1", [user.id]);
     const firstName = userDetails.rows[0]?.first_name || "Customer";
 
-    // Send password reset email
     sendPasswordResetEmail(user.email, token, firstName).catch((e) =>
       console.error("Failed to send password reset email:", e)
     );
@@ -260,7 +250,7 @@ export async function resetPassword(req, res) {
       return res.status(400).json({ error: "Password must be at least 8 characters" });
     }
 
-    // Find valid token and get current password hash
+    // Validate token: must be unused, not expired, for active user
     const result = await pool.query(
       `SELECT prt.id, prt.user_id, u.email, u.password_hash
        FROM password_reset_tokens prt
@@ -278,20 +268,22 @@ export async function resetPassword(req, res) {
 
     const { id: tokenId, user_id: userId, password_hash: currentHash } = result.rows[0];
 
-    // Check if new password is the same as the current password
+    // Prevent reusing same password (UX improvement + security)
     const isSamePassword = await bcrypt.compare(newPassword, currentHash);
     if (isSamePassword) {
       return res.status(400).json({ error: "New password must be different from your current password" });
     }
 
-    // Hash new password
+    // Hash new password with bcrypt
     const passwordHash = await bcrypt.hash(newPassword, BCRYPT_ROUNDS);
 
-    // Update password and mark token as used
+    // Update user's password in database
     await pool.query("UPDATE users SET password_hash = $1, updated_at = NOW() WHERE id = $2", [
       passwordHash,
       userId,
     ]);
+
+    // Mark token as used (single-use - cannot reset again with same link)
     await pool.query("UPDATE password_reset_tokens SET used_at = NOW() WHERE id = $1", [tokenId]);
 
     return res.json({ ok: true, message: "Password reset successfully" });
