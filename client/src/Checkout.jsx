@@ -36,7 +36,7 @@
 
 import { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { useCart } from "./context/CartContext";
+import { useCart } from "./hooks/useCart";
 
 /** Format pence to GBP string (e.g., 499 → "£4.99") */
 const formatGBP = (pence) => `£${(pence / 100).toFixed(2)}`;

@@ -1,10 +1,9 @@
 import { useState } from "react";
-import { Link, useParams, useNavigate } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { resetPassword } from "./api/customerAuth";
 
 export default function ResetPassword() {
   const { token } = useParams();
-  const navigate = useNavigate();
 
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");

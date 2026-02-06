@@ -1,6 +1,6 @@
 import { Link, useSearchParams } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { useCart } from "./context/CartContext";
+import { useCart } from "./hooks/useCart";
 
 export default function OrderSuccess() {
   const [params] = useSearchParams();

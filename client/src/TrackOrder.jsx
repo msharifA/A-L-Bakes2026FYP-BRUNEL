@@ -1,11 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 
-function formatGBPFromPence(pence) {
-  if (typeof pence !== "number") return "";
-  return `£${(pence / 100).toFixed(2)}`;
-}
-
 function niceStatus(s) {
   if (!s) return "";
   return s.charAt(0).toUpperCase() + s.slice(1);
