@@ -1,8 +1,8 @@
-// Cart Context - Global shopping cart with localStorage persistence
+// Cart Provider - Global shopping cart with localStorage persistence
 
-import { createContext, useContext, useEffect, useMemo, useState, useCallback } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
+import { CartContext } from "./CartContext";
 
-const CartContext = createContext(null);
 const STORAGE_KEY = "albakes_cart_v1";
 const MAX_QTY_PER_ITEM = 3;
 
@@ -75,11 +75,4 @@ export function CartProvider({ children }) {
   );
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
-}
-
-// Hook to access cart from any component
-export function useCart() {
-  const ctx = useContext(CartContext);
-  if (!ctx) throw new Error("useCart must be used inside CartProvider");
-  return ctx;
 }

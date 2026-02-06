@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { getProducts } from "./api/products";
 import { Link } from "react-router-dom";
-import { useCart } from "./context/CartContext";
+import { useCart } from "./hooks/useCart";
 
 
 const CATEGORIES = ["All", "Cakes", "Pastries"];

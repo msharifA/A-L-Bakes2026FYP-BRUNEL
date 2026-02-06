@@ -45,8 +45,8 @@
  */
 
 import { BrowserRouter, Routes, Route, Link } from "react-router-dom";
-import { useCart } from "./context/CartContext";
-import { useAuth } from "./context/AuthContext";
+import { useCart } from "./hooks/useCart";
+import { useAuth } from "./hooks/useAuth";
 
 // Page Components - grouped by feature area
 // PUBLIC PAGES
