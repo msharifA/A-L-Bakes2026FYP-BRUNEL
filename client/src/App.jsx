@@ -44,6 +44,7 @@
  * =============================================================================
  */
 
+import { useState, useEffect } from "react";
 import { BrowserRouter, Routes, Route, Link } from "react-router-dom";
 import { useCart } from "./hooks/useCart";
 import { useAuth } from "./hooks/useAuth";
@@ -100,11 +101,26 @@ function NavBar() {
   const { items } = useCart();
   // Auth context - used for login/logout state
   const { customer, isAuthenticated, logout } = useAuth();
+  // Admin state - check if admin is logged in
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  // Check admin auth status on mount
+  useEffect(() => {
+    fetch("/api/auth/me", { credentials: "include" })
+      .then((res) => res.json())
+      .then((data) => setIsAdmin(data.authenticated === true))
+      .catch(() => setIsAdmin(false));
+  }, []);
 
   const cartCount = items.reduce((sum, item) => sum + item.qty, 0);
 
   const handleLogout = async () => {
     await logout();
+  };
+
+  const handleAdminLogout = async () => {
+    await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
+    setIsAdmin(false);
   };
 
   return (
@@ -162,6 +178,41 @@ function NavBar() {
       </Link>
 
       <div style={{ marginLeft: "auto", display: "flex", gap: 16, alignItems: "center" }}>
+        {/* Admin indicator - shows when admin is logged in */}
+        {isAdmin && (
+          <>
+            <Link
+              to="/admin"
+              style={{
+                padding: "6px 14px",
+                borderRadius: 8,
+                background: "#dc3545",
+                color: "#fff",
+                fontWeight: 600,
+                textDecoration: "none",
+                fontSize: 13,
+              }}
+            >
+              Admin Dashboard
+            </Link>
+            <button
+              onClick={handleAdminLogout}
+              style={{
+                padding: "6px 12px",
+                borderRadius: 8,
+                background: "transparent",
+                border: "1px solid #dc3545",
+                color: "#dc3545",
+                cursor: "pointer",
+                fontSize: 13,
+              }}
+            >
+              Admin Logout
+            </button>
+          </>
+        )}
+
+        {/* Customer auth */}
         {isAuthenticated ? (
           <>
             <Link
