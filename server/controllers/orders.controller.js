@@ -68,7 +68,7 @@ export async function createOrderFromSession(req, res) {
      * STEP 1: IDEMPOTENCY CHECK
      * Check if we've already created an order for this Stripe session.
      * This prevents duplicate orders if the user refreshes the page.
-     */
+    //  */
     const existing = await pool.query(
       "SELECT id FROM orders WHERE stripe_session_id = $1 LIMIT 1",
       [sessionId]
@@ -98,9 +98,9 @@ export async function createOrderFromSession(req, res) {
     }
 
     /**
-     * STEP 4: EXTRACT CUSTOMER & ORDER DETAILS
-     * Pull data from Stripe session to store in our database.
-     * We use optional chaining (?.) because some fields might be null.
+     STEP 4: EXTRACT CUSTOMER and ORDER DETAILS
+     Pull data from Stripe session to store in our database.
+     We use optional chaining (?.) because some fields might be null.
      */
     const customer_email =
       session.customer_details?.email || session.customer_email || null;

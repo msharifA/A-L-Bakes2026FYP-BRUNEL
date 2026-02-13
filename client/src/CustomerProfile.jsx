@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "./hooks/useAuth";
+import { formatGBP } from "./utils/formatGBP";
 
 const API = import.meta.env.VITE_API_URL || "";
 
 function formatGBPFromPence(pence) {
   if (typeof pence !== "number") return "";
-  return `£${(pence / 100).toFixed(2)}`;
+  return formatGBP(pence);
 }
 
 function formatDate(dateStr) {

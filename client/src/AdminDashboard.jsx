@@ -97,7 +97,7 @@ export default function AdminDashboard() {
     return () => {
       cancelled = true;
     };
-  }, [queryKey, nav]);
+  }, [queryKey, nav, status, q, limit, offset]);
 
   /* ======================
      Open order details

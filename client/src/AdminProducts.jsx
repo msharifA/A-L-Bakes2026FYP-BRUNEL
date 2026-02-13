@@ -1,8 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { getProducts, deleteProduct, toggleFeatured, toggleActive } from "./api/adminProducts";
-
-const formatGBP = (pence) => `£${(pence / 100).toFixed(2)}`;
+import { formatGBP } from "./utils/formatGBP";
 
 export default function AdminProducts() {
   const [products, setProducts] = useState([]);
