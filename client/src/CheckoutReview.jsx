@@ -50,8 +50,8 @@ import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useCart } from "./hooks/useCart";
 import { createCheckoutSession } from "./api/checkout";
+import { formatGBP } from "./utils/formatGBP";
 
-const formatGBP = (pence) => `£${(pence / 100).toFixed(2)}`;
 const DELIVERY_FEE_PENCE = 499;
 
 function nice(s) {

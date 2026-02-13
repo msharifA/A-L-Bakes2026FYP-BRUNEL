@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import { getProduct, createProduct, updateProduct } from "./api/adminProducts";
+import { formatGBP } from "./utils/formatGBP";
 
 export default function AdminProductForm() {
   const { id } = useParams();
@@ -21,30 +22,29 @@ export default function AdminProductForm() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    if (isEditing) {
-      fetchProduct();
-    }
-  }, [id]);
+    if (!isEditing) return;
 
-  const fetchProduct = async () => {
-    try {
-      const data = await getProduct(id);
-      const p = data.product;
-      setForm({
-        name: p.name || "",
-        description: p.description || "",
-        pricePounds: (p.price_pence / 100).toFixed(2),
-        imageUrl: p.image_url || "",
-        category: p.category || "",
-        isFeatured: p.is_featured || false,
-        isActive: p.is_active !== false,
-      });
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
+    const fetchProduct = async () => {
+      try {
+        const data = await getProduct(id);
+        const p = data.product;
+        setForm({
+          name: p.name || "",
+          description: p.description || "",
+          pricePounds: (p.price_pence / 100).toFixed(2),
+          imageUrl: p.image_url || "",
+          category: p.category || "",
+          isFeatured: p.is_featured || false,
+          isActive: p.is_active !== false,
+        });
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchProduct();
+  }, [id, isEditing]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
