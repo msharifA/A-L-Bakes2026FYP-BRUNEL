@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import { getProduct, createProduct, updateProduct } from "./api/adminProducts";
-import { formatGBP } from "./utils/formatGBP";
 
 export default function AdminProductForm() {
   const { id } = useParams();
