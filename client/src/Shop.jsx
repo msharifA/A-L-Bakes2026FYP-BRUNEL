@@ -2,11 +2,9 @@ import { useEffect, useMemo, useState } from "react";
 import { getProducts } from "./api/products";
 import { Link } from "react-router-dom";
 import { useCart } from "./hooks/useCart";
-
+import { formatGBP } from "./utils/formatGBP";
 
 const CATEGORIES = ["All", "Cakes", "Pastries"];
-
-const formatGBP = (pence) => `£${(pence / 100).toFixed(2)}`;
 
 export default function Shop() {
   const [products, setProducts] = useState([]);
@@ -150,12 +148,29 @@ export default function Shop() {
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 14 }}>
             {filtered.map((p) => (
               <div key={p.id} style={{ border: "1px solid #333", borderRadius: 14, padding: 12 }}>
+                {p.image_url ? (
+                  <img
+                    src={p.image_url}
+                    alt={p.name}
+                    style={{
+                      height: 140,
+                      width: "100%",
+                      borderRadius: 12,
+                      objectFit: "cover",
+                      marginBottom: 10,
+                    }}
+                    onError={(e) => {
+                      e.target.style.display = "none";
+                      e.target.nextSibling.style.display = "flex";
+                    }}
+                  />
+                ) : null}
                 <div
                   style={{
                     height: 140,
                     borderRadius: 12,
                     background: "#2a2a2a",
-                    display: "flex",
+                    display: p.image_url ? "none" : "flex",
                     alignItems: "center",
                     justifyContent: "center",
                     marginBottom: 10,
@@ -163,7 +178,7 @@ export default function Shop() {
                     color: "#aaa",
                   }}
                 >
-                  {p.image_url ? "Image" : "Product image"}
+                  No image
                 </div>
 
                 <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
