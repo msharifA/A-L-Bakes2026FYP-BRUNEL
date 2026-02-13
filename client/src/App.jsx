@@ -44,8 +44,8 @@
  * =============================================================================
  */
 
-import { useState, useEffect } from "react";
-import { BrowserRouter, Routes, Route, Link } from "react-router-dom";
+import { useState, useEffect, useCallback } from "react";
+import { BrowserRouter, Routes, Route, Link, useNavigate, useLocation } from "react-router-dom";
 import { useCart } from "./hooks/useCart";
 import { useAuth } from "./hooks/useAuth";
 
@@ -97,6 +97,8 @@ import AdminSalesReports from "./AdminSalesReports";
  * - useAuth() → Gets customer info and auth state
  */
 function NavBar() {
+  const navigate = useNavigate();
+  const location = useLocation();
   // Cart context - used to display item count badge
   const { items } = useCart();
   // Auth context - used for login/logout state
@@ -104,13 +106,27 @@ function NavBar() {
   // Admin state - check if admin is logged in
   const [isAdmin, setIsAdmin] = useState(false);
 
-  // Check admin auth status on mount
-  useEffect(() => {
-    fetch("/api/auth/me", { credentials: "include" })
-      .then((res) => res.json())
-      .then((data) => setIsAdmin(data.authenticated === true))
-      .catch(() => setIsAdmin(false));
+  // Function to check admin auth status
+  const checkAdminAuth = useCallback(async () => {
+    try {
+      const res = await fetch("/api/auth/me", { credentials: "include" });
+      const data = await res.json();
+      setIsAdmin(data.authenticated === true);
+    } catch {
+      setIsAdmin(false);
+    }
   }, []);
+
+  // Check admin auth status on mount, route change, and auth events
+  useEffect(() => {
+    checkAdminAuth();
+
+    // Listen for admin login/logout events from other components
+    const handleAuthChange = () => checkAdminAuth();
+    window.addEventListener("adminAuthChange", handleAuthChange);
+
+    return () => window.removeEventListener("adminAuthChange", handleAuthChange);
+  }, [checkAdminAuth, location.pathname]);
 
   const cartCount = items.reduce((sum, item) => sum + item.qty, 0);
 
@@ -119,8 +135,14 @@ function NavBar() {
   };
 
   const handleAdminLogout = async () => {
-    await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
+    try {
+      await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
+    } catch {
+      // Continue even if request fails
+    }
     setIsAdmin(false);
+    window.dispatchEvent(new Event("adminAuthChange"));
+    navigate("/");
   };
 
   return (

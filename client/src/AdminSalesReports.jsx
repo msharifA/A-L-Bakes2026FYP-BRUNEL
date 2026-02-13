@@ -1,8 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { getOverview, getSalesByPeriod, getTopProducts, getRecentOrders } from "./api/salesReports";
-
-const formatGBP = (pence) => `£${(pence / 100).toFixed(2)}`;
+import { formatGBP } from "./utils/formatGBP";
 
 export default function AdminSalesReports() {
   const [overview, setOverview] = useState(null);
@@ -14,29 +13,28 @@ export default function AdminSalesReports() {
   const [period, setPeriod] = useState("day");
 
   useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        const [overviewData, salesPeriod, topProds, recent] = await Promise.all([
+          getOverview(),
+          getSalesByPeriod(period, 30),
+          getTopProducts(5, 30),
+          getRecentOrders(5),
+        ]);
+
+        setOverview(overviewData.overview);
+        setSalesData(salesPeriod.sales);
+        setTopProducts(topProds.products);
+        setRecentOrders(recent.orders);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
     fetchData();
   }, [period]);
-
-  const fetchData = async () => {
-    setLoading(true);
-    try {
-      const [overviewData, salesPeriod, topProds, recent] = await Promise.all([
-        getOverview(),
-        getSalesByPeriod(period, 30),
-        getTopProducts(5, 30),
-        getRecentOrders(5),
-      ]);
-
-      setOverview(overviewData.overview);
-      setSalesData(salesPeriod.sales);
-      setTopProducts(topProds.products);
-      setRecentOrders(recent.orders);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const formatDate = (dateStr) => {
     return new Date(dateStr).toLocaleDateString("en-GB", {
