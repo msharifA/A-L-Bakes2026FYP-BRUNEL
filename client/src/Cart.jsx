@@ -1,7 +1,6 @@
 import { Link } from "react-router-dom";
-import { useCart } from "./cart/CartContext";
-
-const formatGBP = (pence) => `£${(pence / 100).toFixed(2)}`;
+import { useCart } from "./hooks/useCart";
+import { formatGBP } from "./utils/formatGBP";
 
 export default function Cart() {
   const { items, removeItem, setQty, subtotalPence, clearCart, maxQtyPerItem } = useCart();

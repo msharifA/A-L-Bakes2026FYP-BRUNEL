@@ -1,20 +1,59 @@
+/**
+ * =============================================================================
+ * CHECKOUT PAGE (STEP 1 OF 3)
+ * =============================================================================
+ *
+ * PURPOSE:
+ * Collects customer details before payment. This is the first step in the
+ * checkout flow:
+ *
+ * CHECKOUT FLOW:
+ * 1. /checkout (THIS PAGE) → Customer enters name, email, phone, delivery info
+ * 2. /checkout/review → Customer reviews order, clicks "Pay with Stripe"
+ * 3. Stripe Checkout → External Stripe-hosted payment page
+ * 4. /order-success → Post-payment confirmation
+ *
+ * DATA FLOW:
+ * - Form data is validated client-side
+ * - On submit, data is saved to localStorage (albakes_checkout_v1)
+ * - User is redirected to /checkout/review
+ * - Review page reads localStorage and sends to backend
+ *
+ * WHY LOCALSTORAGE?
+ * - Simple state persistence between pages
+ * - No complex state management needed
+ * - Data is sent to backend at review step (not here)
+ *
+ * VALIDATION:
+ * - Name, email, phone are required
+ * - Email must be valid format
+ * - UK phone number validation
+ * - Delivery address required only if delivery method selected
+ * - Delivery date must be at least 7 days in future
+ *
+ * =============================================================================
+ */
+
 import { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { useCart } from "./cart/CartContext";
+import { useCart } from "./hooks/useCart";
+import { formatGBP } from "./utils/formatGBP";
 
-const formatGBP = (pence) => `£${(pence / 100).toFixed(2)}`;
-
+/** Delivery fee in pence (£4.99) */
 const DELIVERY_FEE_PENCE = 499;
 
+/** Email validation regex - basic format check */
 function validateEmail(email) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
+/** UK phone validation - check digit count */
 function validateUKPhone(phone) {
   const digits = phone.replace(/\s+/g, "");
   return digits.length >= 10 && digits.length <= 15;
 }
 
+/** Get date N days from today (for minimum delivery date) */
 function getTomorrowPlusN(days) {
   const d = new Date();
   d.setDate(d.getDate() + days);
@@ -60,12 +99,12 @@ export default function Checkout() {
       e.deliveryDate = "Select a date.";
     } else {
       const minDate = new Date();
-      minDate.setDate(minDate.getDate() + 2);
+      minDate.setDate(minDate.getDate() + 7);
       minDate.setHours(0, 0, 0, 0);
       const selected = new Date(deliveryDate);
       selected.setHours(0, 0, 0, 0);
       if (selected < minDate) {
-        e.deliveryDate = "Date must be at least 2 days from today.";
+        e.deliveryDate = "Date must be at least 7 days from today.";
       }
     }
 
@@ -257,7 +296,7 @@ export default function Checkout() {
               value={deliveryDate}
               onChange={(e) => setDeliveryDate(e.target.value)}
               onBlur={() => touch("deliveryDate")}
-              min={getTomorrowPlusN(2)}
+              min={getTomorrowPlusN(7)}
               style={{ padding: 10, width: "100%" }}
             />
             {touched.deliveryDate && errors.deliveryDate && (

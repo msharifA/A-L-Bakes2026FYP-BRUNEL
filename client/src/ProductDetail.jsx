@@ -1,10 +1,9 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useCart } from "./cart/CartContext";
+import { useCart } from "./hooks/useCart";
 import ReviewsList from "./components/ReviewsList";
 import ReviewForm from "./components/ReviewForm";
-
-const formatGBP = (pence) => `£${(pence / 100).toFixed(2)}`;
+import { formatGBP } from "./utils/formatGBP";
 
 export default function ProductDetail() {
   const { id } = useParams();

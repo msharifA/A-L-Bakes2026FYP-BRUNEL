@@ -25,6 +25,9 @@ export default function AdminLogin() {
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || "Login failed");
 
+      // Notify navbar to update admin state
+      window.dispatchEvent(new Event("adminAuthChange"));
+
       // cookie now set -> go to dashboard
       nav("/admin");
     } catch (e2) {

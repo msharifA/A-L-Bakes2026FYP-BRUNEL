@@ -7,11 +7,7 @@ export default function AdminReviews() {
   const [filter, setFilter] = useState("pending");
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    loadReviews();
-  }, [filter]);
-
-  async function loadReviews() {
+  const loadReviews = async () => {
     try {
       setLoading(true);
       const data = await adminListReviews({ status: filter });
@@ -21,7 +17,12 @@ export default function AdminReviews() {
     } finally {
       setLoading(false);
     }
-  }
+  };
+
+  useEffect(() => {
+    loadReviews();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filter]);
 
   async function updateStatus(reviewId, status) {
     try {

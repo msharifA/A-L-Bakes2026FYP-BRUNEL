@@ -6,6 +6,7 @@ import {
   adminListOrders,
   adminUpdateOrderStatus,
 } from "./api/admin";
+import { formatGBP } from "./utils/formatGBP";
 
 const STATUS_OPTIONS = [
   "",
@@ -20,7 +21,7 @@ const STATUS_OPTIONS = [
 
 function gbp(pence) {
   if (typeof pence !== "number") return "";
-  return `£${(pence / 100).toFixed(2)}`;
+  return formatGBP(pence);
 }
 
 function nice(s) {
@@ -96,7 +97,7 @@ export default function AdminDashboard() {
     return () => {
       cancelled = true;
     };
-  }, [queryKey, nav]);
+  }, [queryKey, nav, status, q, limit, offset]);
 
   /* ======================
      Open order details
@@ -341,18 +342,48 @@ export default function AdminDashboard() {
                 <strong>ID:</strong>{" "}
                 <code style={{ fontSize: 12 }}>{detail.order.id}</code>
               </p>
-              <p>
+
+              {/* Customer Info */}
+              <h3 style={{ marginTop: 16, marginBottom: 8 }}>Customer Info</h3>
+              <p style={{ margin: "4px 0" }}>
+                <strong>Name:</strong> {detail.order.customer_name || "N/A"}
+              </p>
+              <p style={{ margin: "4px 0" }}>
                 <strong>Email:</strong> {detail.order.customer_email}
               </p>
-              <p>
+
+              {/* Order Status */}
+              <h3 style={{ marginTop: 16, marginBottom: 8 }}>Order Status</h3>
+              <p style={{ margin: "4px 0" }}>
                 <strong>Status:</strong> {nice(detail.order.status)} •{" "}
-                <strong>Payment:</strong>{" "}
-                {nice(detail.order.payment_status)}
+                <strong>Payment:</strong> {nice(detail.order.payment_status)}
               </p>
-              <p>
-                <strong>Total:</strong>{" "}
-                {gbp(detail.order.total_pence)}
+              <p style={{ margin: "4px 0" }}>
+                <strong>Delivery:</strong> {nice(detail.order.delivery_method) || "N/A"}
+                {detail.order.delivery_date && (
+                  <> • <strong>Date:</strong> {new Date(detail.order.delivery_date).toLocaleDateString()}</>
+                )}
               </p>
+              <p style={{ margin: "4px 0" }}>
+                <strong>Total:</strong> {gbp(detail.order.total_pence)}
+              </p>
+
+              {/* Order Items */}
+              <h3 style={{ marginTop: 16, marginBottom: 8 }}>Items</h3>
+              {detail.items && detail.items.length > 0 ? (
+                <ul style={{ margin: 0, paddingLeft: 20 }}>
+                  {detail.items.map((item, i) => (
+                    <li key={i} style={{ marginBottom: 6 }}>
+                      <strong>{item.product_name}</strong> × {item.quantity}
+                      <span style={{ color: "#888", marginLeft: 8 }}>
+                        {gbp(item.price_pence)} each
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p style={{ color: "#888" }}>No items found.</p>
+              )}
 
               <hr />
 

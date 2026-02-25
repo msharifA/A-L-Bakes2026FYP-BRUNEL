@@ -1,6 +1,7 @@
-import { createContext, useContext, useEffect, useMemo, useState, useCallback } from "react";
+// Cart Provider - Global shopping cart with localStorage persistence
 
-const CartContext = createContext(null);
+import { useEffect, useMemo, useState, useCallback } from "react";
+import { CartContext } from "./CartContext";
 
 const STORAGE_KEY = "albakes_cart_v1";
 const MAX_QTY_PER_ITEM = 3;
@@ -15,39 +16,30 @@ function safeParse(json, fallback) {
 }
 
 export function CartProvider({ children }) {
-  const [items, setItems] = useState(() => {
-    return safeParse(localStorage.getItem(STORAGE_KEY), []);
-  });
+  // Load cart from localStorage on mount
+  const [items, setItems] = useState(() => safeParse(localStorage.getItem(STORAGE_KEY), []));
 
-  // persist
+  // Persist cart to localStorage on change
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
   }, [items]);
 
-  // helpers
+  // Add item to cart (merges if same product+customisation exists)
   const addItem = (product, customisation, qty = 1) => {
-    const productId = product.id;
-
-    // same product + same customisation should merge quantities
-    const key = JSON.stringify({
-      productId,
-      customisation: customisation || {},
-    });
+    const key = JSON.stringify({ productId: product.id, customisation: customisation || {} });
 
     setItems((prev) => {
       const next = [...prev];
       const idx = next.findIndex((it) => it._key === key);
 
       if (idx >= 0) {
-        // Enforce max quantity limit
-        const newQty = Math.min(next[idx].qty + qty, MAX_QTY_PER_ITEM);
-        next[idx] = { ...next[idx], qty: newQty };
+        next[idx] = { ...next[idx], qty: Math.min(next[idx].qty + qty, MAX_QTY_PER_ITEM) };
         return next;
       }
 
       next.push({
-        _key: key, // internal unique key for merge
-        productId,
+        _key: key,
+        productId: product.id,
         name: product.name,
         unitPricePence: product.price_pence,
         category: product.category,
@@ -58,9 +50,7 @@ export function CartProvider({ children }) {
     });
   };
 
-  const removeItem = (key) => {
-    setItems((prev) => prev.filter((it) => it._key !== key));
-  };
+  const removeItem = (key) => setItems((prev) => prev.filter((it) => it._key !== key));
 
   const setQty = (key, qty) => {
     const q = Number(qty);
@@ -85,10 +75,4 @@ export function CartProvider({ children }) {
   );
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
-}
-
-export function useCart() {
-  const ctx = useContext(CartContext);
-  if (!ctx) throw new Error("useCart must be used inside CartProvider");
-  return ctx;
 }

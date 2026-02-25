@@ -1,8 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { getFeaturedProducts } from "./api/products";
-
-const formatGBP = (pence) => `£${(pence / 100).toFixed(2)}`;
+import { formatGBP } from "./utils/formatGBP";
 
 export default function Home() {
   const [featured, setFeatured] = useState([]);
@@ -86,12 +85,29 @@ export default function Home() {
                   e.currentTarget.style.transform = "translateY(0)";
                 }}
               >
+                {p.image_url ? (
+                  <img
+                    src={p.image_url}
+                    alt={p.name}
+                    style={{
+                      height: 120,
+                      width: "100%",
+                      borderRadius: 12,
+                      objectFit: "cover",
+                      marginBottom: 10,
+                    }}
+                    onError={(e) => {
+                      e.target.style.display = "none";
+                      e.target.nextSibling.style.display = "flex";
+                    }}
+                  />
+                ) : null}
                 <div
                   style={{
                     height: 120,
                     borderRadius: 12,
                     background: "#2a2a2a",
-                    display: "flex",
+                    display: p.image_url ? "none" : "flex",
                     alignItems: "center",
                     justifyContent: "center",
                     marginBottom: 10,
@@ -99,7 +115,7 @@ export default function Home() {
                     color: "#aaa",
                   }}
                 >
-                  Product image
+                  No image
                 </div>
 
                 <strong>{p.name}</strong>

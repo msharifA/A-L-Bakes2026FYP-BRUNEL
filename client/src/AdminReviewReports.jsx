@@ -8,11 +8,6 @@ export default function AdminReviewReports() {
   const [error, setError] = useState("");
   const [filter, setFilter] = useState("pending");
   const [actionLoading, setActionLoading] = useState(null);
-  const [selectedReport, setSelectedReport] = useState(null);
-
-  useEffect(() => {
-    fetchReports();
-  }, [filter]);
 
   const fetchReports = async () => {
     setLoading(true);
@@ -31,13 +26,17 @@ export default function AdminReviewReports() {
     try {
       await updateReport(id, { status, deleteReview });
       setReports(reports.filter((r) => r.id !== id));
-      setSelectedReport(null);
     } catch (err) {
       alert(err.message);
     } finally {
       setActionLoading(null);
     }
   };
+
+  useEffect(() => {
+    fetchReports();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filter]);
 
   const formatDate = (dateStr) => {
     return new Date(dateStr).toLocaleDateString("en-GB", {
