@@ -34,7 +34,7 @@ jobs:
       - name: Install dependencies & run tests
         working-directory: server
         run: |
-          npm ci
+          npm ci --include=optional
           npm test
 
       - name: Configure AWS (OIDC)
