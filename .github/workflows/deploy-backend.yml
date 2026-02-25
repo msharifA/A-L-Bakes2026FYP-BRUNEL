@@ -34,8 +34,8 @@ jobs:
       - name: Install dependencies & run tests
         working-directory: server
         run: |
-          npm install --prefer-online
-          npm install @rollup/rollup-linux-x64-gnu --save-optional
+          rm -rf node_modules package-lock.json
+          npm install
           npm test
 
       - name: Configure AWS (OIDC)
