@@ -73,7 +73,7 @@ const SENDER_NAME = "A&L Bakes";
  * - Screen readers work better with plain text
  * - Gmail/Outlook show HTML, but text is the fallback
  */
-async function sendEmail({ to, subject, html, text }) {
+export async function sendEmail({ to, subject, html, text }) {
   const mailOptions = {
     from: `"${SENDER_NAME}" <${SENDER_EMAIL}>`,
     to,
