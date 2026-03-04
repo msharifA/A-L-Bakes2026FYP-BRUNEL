@@ -63,6 +63,31 @@ app.use(
   })
 );
 
+// Basic CSRF protection via Referer validation (production only)
+const isProd = process.env.NODE_ENV === "production";
+app.use((req, res, next) => {
+  // Skip in development or for GET/HEAD/OPTIONS requests
+  if (!isProd || ["GET", "HEAD", "OPTIONS"].includes(req.method)) {
+    return next();
+  }
+
+  // Check Referer or Origin header
+  const referer = req.headers.referer || req.headers.origin;
+
+  // Allow requests without referer (e.g., API clients, Postman)
+  if (!referer) return next();
+
+  // Validate referer starts with an allowed origin
+  const isValidOrigin = ALLOWED_ORIGINS.some(origin => referer.startsWith(origin));
+
+  if (!isValidOrigin) {
+    console.warn(`CSRF: Blocked request from ${referer} to ${req.path}`);
+    return res.status(403).json({ error: "Invalid request origin" });
+  }
+
+  next();
+});
+
 const raw = process.env.STRIPE_SECRET_KEY;
 console.log("Stripe key typeof:", typeof raw);
 console.log("Stripe key prefic:", (raw || "").slice(0, 12));
