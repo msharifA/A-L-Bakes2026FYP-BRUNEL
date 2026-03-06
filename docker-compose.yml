@@ -29,6 +29,8 @@ services:
       NODE_ENV: development
     ports:
       - "5001:5000"        # host:container (5000 is busy on your Mac; 5001 -> 5000)
+    volumes:
+      - ~/.aws:/root/.aws:ro
     depends_on:
       db:
         condition: service_healthy
