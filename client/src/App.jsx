@@ -58,6 +58,10 @@ import Cart from "./Cart";
 import About from "./About";
 import Contact from "./Contact";
 
+// CUSTOM CAKE
+import CustomCakeBuilder from "./CustomCakeBuilder";
+import CustomCakeSuccess from "./CustomCakeSuccess";
+
 // CHECKOUT FLOW
 import Checkout from "./Checkout";
 import CheckoutReview from "./CheckoutReview";
@@ -174,6 +178,7 @@ function NavBar() {
       </Link>
       <Link to="/">Home</Link>
       <Link to="/menu">Menu</Link>
+      <Link to="/custom-cake">Custom Cake</Link>
       <Link to="/cart" style={{ position: "relative" }}>
         Cart
         {cartCount > 0 && (
@@ -309,6 +314,10 @@ export default function App() {
         <Route path="/cart" element={<Cart />} />
         <Route path="/about" element={<About />} />
         <Route path="/contact" element={<Contact />} />
+
+        {/* ===== CUSTOM CAKE ===== */}
+        <Route path="/custom-cake" element={<CustomCakeBuilder />} />
+        <Route path="/custom-cake/success" element={<CustomCakeSuccess />} />
 
         {/* ===== CHECKOUT FLOW ===== */}
         {/* Step 1: Customer enters details */}

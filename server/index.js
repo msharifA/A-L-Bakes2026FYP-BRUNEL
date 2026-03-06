@@ -407,6 +407,7 @@ api.post("/run-migrations", async (req, res) => {
         servings INTEGER,
         message_on_cake VARCHAR(200),
         special_requests TEXT,
+        reference_images TEXT,
         event_type VARCHAR(100),
         event_date DATE,
         estimated_price_pence INTEGER,

@@ -16,6 +16,7 @@ CREATE TABLE IF NOT EXISTS cake_enquiries (
   servings INTEGER,
   message_on_cake VARCHAR(200),
   special_requests TEXT,
+  reference_images TEXT,
 
   -- Event details
   event_type VARCHAR(100),

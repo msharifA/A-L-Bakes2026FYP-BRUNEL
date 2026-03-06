@@ -5,12 +5,15 @@ import {
   confirmDeposit,
   getEnquiry,
   getCakeConfig,
+  uploadReferenceImages,
 } from "../controllers/enquiries.controller.js";
+import { uploadImages } from "../middleware/upload.js";
 
 const router = express.Router();
 
 // Public routes
 router.get("/config", getCakeConfig);
+router.post("/upload-images", uploadImages, uploadReferenceImages);
 router.post("/", submitEnquiry);
 router.get("/:id", getEnquiry);
 router.post("/:id/deposit", createDepositSession);

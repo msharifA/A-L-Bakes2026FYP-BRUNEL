@@ -1,6 +1,7 @@
 import Stripe from "stripe";
 import { pool } from "../db.js";
 import { sendEmail } from "../services/email.service.js";
+import { uploadEnquiryImage } from "../services/s3.service.js";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
@@ -21,7 +22,7 @@ export async function submitEnquiry(req, res) {
       customerName, customerEmail, customerPhone,
       cakeSize, cakeFlavour, filling, frosting,
       tiers, servings, messageOnCake, specialRequests,
-      eventType, eventDate,
+      referenceImages, eventType, eventDate,
     } = req.body;
 
     if (!customerName || !customerEmail || !cakeSize || !cakeFlavour) {
@@ -31,19 +32,21 @@ export async function submitEnquiry(req, res) {
     const estimatedPricePence = SIZE_PRICES[cakeSize] || 5000;
     const depositPence = Math.round(estimatedPricePence * 0.5);
 
+    const refImagesJson = referenceImages?.length ? JSON.stringify(referenceImages) : null;
+
     const result = await pool.query(
       `INSERT INTO cake_enquiries
         (customer_name, customer_email, customer_phone,
          cake_size, cake_flavour, filling, frosting,
          tiers, servings, message_on_cake, special_requests,
-         event_type, event_date, estimated_price_pence, deposit_pence)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
+         reference_images, event_type, event_date, estimated_price_pence, deposit_pence)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)
        RETURNING *`,
       [
         customerName, customerEmail, customerPhone || null,
         cakeSize, cakeFlavour, filling || null, frosting || null,
         tiers || 1, servings || null, messageOnCake || null, specialRequests || null,
-        eventType || null, eventDate || null, estimatedPricePence, depositPence,
+        refImagesJson, eventType || null, eventDate || null, estimatedPricePence, depositPence,
       ]
     );
 
@@ -69,6 +72,10 @@ export async function submitEnquiry(req, res) {
               <p><strong>Frosting:</strong> ${frosting || 'None specified'}</p>
               ${messageOnCake ? `<p><strong>Message on cake:</strong> ${messageOnCake}</p>` : ''}
               ${specialRequests ? `<p><strong>Special requests:</strong> ${specialRequests}</p>` : ''}
+              ${referenceImages?.length ? `
+                <p><strong>Reference Images:</strong></p>
+                <div>${referenceImages.map((url, i) => `<a href="${url}" target="_blank" style="display:inline-block;margin:4px;"><img src="${url}" alt="Reference ${i + 1}" style="width:120px;height:120px;object-fit:cover;border-radius:8px;border:1px solid #ddd;" /></a>`).join('')}</div>
+              ` : ''}
               ${eventType ? `<p><strong>Event:</strong> ${eventType}</p>` : ''}
               ${eventDate ? `<p><strong>Date needed:</strong> ${eventDate}</p>` : ''}
               <p><strong>Estimated price:</strong> £${(estimatedPricePence / 100).toFixed(2)}</p>
@@ -315,6 +322,25 @@ export async function adminUpdateEnquiry(req, res) {
   } catch (e) {
     console.error("adminUpdateEnquiry error:", e);
     return res.status(500).json({ error: "Failed to update enquiry" });
+  }
+}
+
+// POST /api/enquiries/upload-images - Upload reference images to S3
+export async function uploadReferenceImages(req, res) {
+  try {
+    if (!req.files || req.files.length === 0) {
+      return res.status(400).json({ error: "No files uploaded" });
+    }
+
+    const uploadPromises = req.files.map((file) =>
+      uploadEnquiryImage(file.buffer, file.originalname, file.mimetype)
+    );
+    const imageUrls = await Promise.all(uploadPromises);
+
+    return res.json({ imageUrls });
+  } catch (e) {
+    console.error("uploadReferenceImages error:", e);
+    return res.status(500).json({ error: "Failed to upload images" });
   }
 }
 
