@@ -192,6 +192,7 @@ export default function AdminDashboard() {
 
         <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
           <Link to="/admin/products">Products</Link>
+          <Link to="/admin/enquiries">Enquiries</Link>
           <Link to="/admin/reviews">Reviews</Link>
           <Link to="/admin/review-reports">Reports</Link>
           <Link to="/admin/sales">Sales</Link>

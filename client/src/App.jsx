@@ -85,6 +85,7 @@ import AdminProducts from "./AdminProducts";
 import AdminProductForm from "./AdminProductForm";
 import AdminReviewReports from "./AdminReviewReports";
 import AdminSalesReports from "./AdminSalesReports";
+import AdminEnquiries from "./AdminEnquiries";
 
 /**
  * NAVBAR COMPONENT
@@ -350,6 +351,7 @@ export default function App() {
         <Route path="/admin/products/:id/edit" element={<AdminProductForm />} />
         <Route path="/admin/review-reports" element={<AdminReviewReports />} />
         <Route path="/admin/sales" element={<AdminSalesReports />} />
+        <Route path="/admin/enquiries" element={<AdminEnquiries />} />
       </Routes>
     </BrowserRouter>
   );
