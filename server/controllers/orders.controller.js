@@ -30,6 +30,7 @@ import { pool } from "../db.js";
 import {
   sendOrderConfirmationEmail,
   sendAdminNewOrderNotification,
+  sendInvoiceEmail,
 } from "../services/email.service.js";
 
 // Initialize Stripe SDK with secret key (server-side only, never expose to frontend)
@@ -122,6 +123,13 @@ export async function createOrderFromSession(req, res) {
     const delivery_method = session.metadata?.delivery_method || "pickup";
     const delivery_date = session.metadata?.delivery_date || null;
 
+    // Delivery address (optional - for delivery orders)
+    const delivery_address_line1 = session.metadata?.delivery_address_line1 || null;
+    const delivery_address_line2 = session.metadata?.delivery_address_line2 || null;
+    const delivery_city = session.metadata?.delivery_city || null;
+    const delivery_postcode = session.metadata?.delivery_postcode || null;
+    const delivery_notes = session.metadata?.delivery_notes || null;
+
     /**
      * STEP 5: GET LINE ITEMS FROM STRIPE
      * Retrieve what products the customer ordered.
@@ -143,8 +151,10 @@ export async function createOrderFromSession(req, res) {
           (customer_email, customer_name, status, payment_status,
            currency, subtotal_pence, delivery_pence, total_pence,
            stripe_session_id, stripe_payment_intent_id,
-           delivery_method, delivery_date)
-         VALUES ($1,$2,'paid','paid',$3,$4,$5,$6,$7,$8,$9,$10)
+           delivery_method, delivery_date,
+           delivery_address_line1, delivery_address_line2, delivery_city,
+           delivery_postcode, delivery_notes)
+         VALUES ($1,$2,'paid','paid',$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
          ON CONFLICT (stripe_session_id)
          DO UPDATE SET
            stripe_payment_intent_id = COALESCE(orders.stripe_payment_intent_id, EXCLUDED.stripe_payment_intent_id),
@@ -163,6 +173,11 @@ export async function createOrderFromSession(req, res) {
           session.payment_intent,
           delivery_method,
           delivery_date,
+          delivery_address_line1,
+          delivery_address_line2,
+          delivery_city,
+          delivery_postcode,
+          delivery_notes,
         ]
       );
 
@@ -218,6 +233,7 @@ export async function createOrderFromSession(req, res) {
         items: lineItems.data.map((li) => ({
           name: li.description || "Item",
           quantity: li.quantity ?? 1,
+          price_pence: li.price?.unit_amount ?? 0,
           line_total_pence: (li.price?.unit_amount ?? 0) * (li.quantity ?? 1),
         })),
         subtotal_pence,
@@ -225,6 +241,11 @@ export async function createOrderFromSession(req, res) {
         total_pence,
         delivery_method,
         delivery_date,
+        delivery_address_line1,
+        delivery_address_line2,
+        delivery_city,
+        delivery_postcode,
+        delivery_notes,
       };
 
       // Customer confirmation email - sent via AWS SES
@@ -235,6 +256,11 @@ export async function createOrderFromSession(req, res) {
       // Admin notification - alerts bakery owner immediately
       sendAdminNewOrderNotification(orderForEmail).catch((e) =>
         console.error("Failed to send admin notification email:", e)
+      );
+
+      // Invoice email - detailed invoice with itemized breakdown
+      sendInvoiceEmail(orderForEmail, orderForEmail.items).catch((e) =>
+        console.error("Failed to send invoice email:", e)
       );
 
       // Return success - frontend shows order confirmation page

@@ -568,3 +568,150 @@ View in dashboard: ${frontendUrl}/admin
     text,
   });
 }
+
+/**
+ * Send invoice/receipt email to customer after successful order
+ *
+ * @param {Object} order - Order object from database
+ * @param {Array} items - Order items with product details
+ */
+export async function sendInvoiceEmail(order, items) {
+  const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
+
+  const itemsList = items
+    .map(
+      (item) =>
+        `<tr>
+          <td style="padding: 12px; border-bottom: 1px solid #eee;">
+            <strong>${item.product_name || item.name}</strong>
+            ${item.customisation ? `<br/><small style="color: #666;">${JSON.stringify(item.customisation)}</small>` : ""}
+          </td>
+          <td style="padding: 12px; border-bottom: 1px solid #eee; text-align: center;">${item.quantity}</td>
+          <td style="padding: 12px; border-bottom: 1px solid #eee; text-align: right;">£${((item.price_pence || 0) / 100).toFixed(2)}</td>
+          <td style="padding: 12px; border-bottom: 1px solid #eee; text-align: right;"><strong>£${(((item.price_pence || 0) * item.quantity) / 100).toFixed(2)}</strong></td>
+        </tr>`
+    )
+    .join("");
+
+  const deliveryAddress = order.delivery_address_line1
+    ? `
+      <div style="margin-top: 20px; padding: 15px; background: #f9f9f9; border-radius: 8px;">
+        <strong style="color: #333;">Delivery Address:</strong><br/>
+        ${order.delivery_address_line1}<br/>
+        ${order.delivery_address_line2 ? `${order.delivery_address_line2}<br/>` : ""}
+        ${order.delivery_city || ""} ${order.delivery_postcode || ""}<br/>
+        ${order.delivery_notes ? `<small style="color: #666;">Note: ${order.delivery_notes}</small>` : ""}
+      </div>`
+    : "";
+
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 700px; margin: 0 auto; background: #fff;">
+      <!-- Header -->
+      <div style="text-align: center; padding: 30px; background: #1a1a1a;">
+        <h1 style="color: #f5a623; margin: 0; font-size: 32px;">A&L Bakes</h1>
+        <p style="color: #fff; margin: 8px 0 0; font-size: 14px;">Invoice & Order Confirmation</p>
+      </div>
+
+      <!-- Content -->
+      <div style="padding: 40px 30px;">
+        <h2 style="color: #333; margin: 0 0 8px;">Thank you for your order!</h2>
+        <p style="color: #666; margin: 0 0 30px;">Hi ${order.customer_name || "Valued Customer"}, your order has been confirmed.</p>
+
+        <!-- Order Details -->
+        <div style="background: #f9f9f9; padding: 20px; border-radius: 8px; margin-bottom: 30px;">
+          <table style="width: 100%; border-collapse: collapse;">
+            <tr>
+              <td style="padding: 8px 0; color: #666;">Order Number:</td>
+              <td style="padding: 8px 0; text-align: right; font-weight: bold; color: #333;">#${order.id.slice(0, 8).toUpperCase()}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0; color: #666;">Order Date:</td>
+              <td style="padding: 8px 0; text-align: right; color: #333;">${new Date(order.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0; color: #666;">Delivery Method:</td>
+              <td style="padding: 8px 0; text-align: right; color: #333;">${order.delivery_method === "delivery" ? "🚚 Delivery" : "📦 Collection"}</td>
+            </tr>
+            ${order.delivery_date ? `
+            <tr>
+              <td style="padding: 8px 0; color: #666;">${order.delivery_method === "delivery" ? "Delivery" : "Collection"} Date:</td>
+              <td style="padding: 8px 0; text-align: right; color: #333;">${new Date(order.delivery_date).toLocaleDateString('en-GB')}</td>
+            </tr>` : ""}
+          </table>
+        </div>
+
+        ${deliveryAddress}
+
+        <!-- Items Table -->
+        <h3 style="color: #333; margin: 30px 0 15px;">Order Items</h3>
+        <table style="width: 100%; border-collapse: collapse; background: #fff; border: 1px solid #eee;">
+          <thead>
+            <tr style="background: #f5f5f5;">
+              <th style="padding: 12px; text-align: left; border-bottom: 2px solid #ddd; color: #333;">Item</th>
+              <th style="padding: 12px; text-align: center; border-bottom: 2px solid #ddd; color: #333;">Qty</th>
+              <th style="padding: 12px; text-align: right; border-bottom: 2px solid #ddd; color: #333;">Price</th>
+              <th style="padding: 12px; text-align: right; border-bottom: 2px solid #ddd; color: #333;">Subtotal</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${itemsList}
+          </tbody>
+          <tfoot>
+            <tr>
+              <td colspan="3" style="padding: 15px; text-align: right; border-top: 2px solid #ddd; font-size: 18px; font-weight: bold; color: #333;">Total</td>
+              <td style="padding: 15px; text-align: right; border-top: 2px solid #ddd; font-size: 18px; font-weight: bold; color: #f5a623;">£${(order.total_pence / 100).toFixed(2)}</td>
+            </tr>
+          </tfoot>
+        </table>
+
+        <!-- Footer Message -->
+        <div style="margin-top: 40px; padding: 20px; background: #fffbf5; border-left: 4px solid #f5a623; border-radius: 4px;">
+          <p style="margin: 0; color: #333; font-size: 14px;">
+            <strong>Questions about your order?</strong><br/>
+            Reply to this email or reach out on <a href="https://www.instagram.com/al_bakess/" style="color: #f5a623; text-decoration: none;">Instagram @al_bakess</a>
+          </p>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div style="text-align: center; padding: 25px; background: #f5f5f5; color: #888; font-size: 12px;">
+        <p style="margin: 0 0 8px;">A&L Bakes | Handcrafted with Love</p>
+        <p style="margin: 0;">&copy; ${new Date().getFullYear()} A&L Bakes. All rights reserved.</p>
+      </div>
+    </div>
+  `;
+
+  const text = `
+A&L BAKES - INVOICE
+
+Order #${order.id.slice(0, 8).toUpperCase()}
+Date: ${new Date(order.created_at).toLocaleDateString('en-GB')}
+
+Customer: ${order.customer_name}
+Email: ${order.customer_email}
+Method: ${order.delivery_method === "delivery" ? "Delivery" : "Collection"}
+${order.delivery_date ? `Date: ${new Date(order.delivery_date).toLocaleDateString('en-GB')}` : ""}
+
+${order.delivery_address_line1 ? `
+Delivery Address:
+${order.delivery_address_line1}
+${order.delivery_address_line2 || ""}
+${order.delivery_city || ""} ${order.delivery_postcode || ""}
+${order.delivery_notes ? `Note: ${order.delivery_notes}` : ""}
+` : ""}
+
+ITEMS:
+${items.map((item) => `${item.product_name || item.name} x${item.quantity} - £${(((item.price_pence || 0) * item.quantity) / 100).toFixed(2)}`).join("\n")}
+
+TOTAL: £${(order.total_pence / 100).toFixed(2)}
+
+Questions? Reply to this email or visit Instagram: @al_bakess
+  `.trim();
+
+  return sendEmail({
+    to: order.customer_email,
+    subject: `Invoice #${order.id.slice(0, 8).toUpperCase()} - A&L Bakes`,
+    html,
+    text,
+  });
+}

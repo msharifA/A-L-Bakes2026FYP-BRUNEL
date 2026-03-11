@@ -548,6 +548,11 @@ api.post("/checkout/create-session", async (req, res) => {
         customer_name: checkout.name,
         delivery_method: checkout.deliveryMethod || "pickup",
         delivery_date: checkout.deliveryDate || "",
+        delivery_address_line1: checkout.address?.address1 || "",
+        delivery_address_line2: checkout.address?.address2 || "",
+        delivery_city: checkout.address?.city || "",
+        delivery_postcode: checkout.address?.postcode || "",
+        delivery_notes: checkout.notes || "",
       },
     });
 

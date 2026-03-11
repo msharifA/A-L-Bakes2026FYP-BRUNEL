@@ -56,3 +56,35 @@ export async function getEnquiry(enquiryId) {
   if (!r.ok) throw new Error("Enquiry not found");
   return r.json();
 }
+
+/**
+ * =============================================================================
+ * CONFIRM FINAL PAYMENT
+ * =============================================================================
+ *
+ * CALLED BY: CustomCakeFinalPaymentSuccess.jsx
+ * WHEN: After customer completes final payment on Stripe
+ * PURPOSE: Verify payment with backend and mark enquiry as completed
+ *
+ * FLOW:
+ * 1. Customer pays on Stripe checkout page
+ * 2. Stripe redirects to success page with session_id
+ * 3. Success page calls this function
+ * 4. Backend verifies payment with Stripe
+ * 5. Backend updates enquiry to 'completed'
+ * 6. Backend sends confirmation email
+ *
+ * @param {string} enquiryId - The enquiry UUID
+ * @param {string} sessionId - Stripe checkout session ID
+ * @returns {Promise<{enquiry: object}>} Updated enquiry object
+ */
+export async function confirmFinalPayment(enquiryId, sessionId) {
+  const r = await fetch(`${BASE}/api/enquiries/${enquiryId}/confirm-final-payment`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ sessionId }),
+  });
+  const json = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(json.error || "Failed to confirm final payment");
+  return json;
+}

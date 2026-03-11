@@ -61,6 +61,7 @@ import Contact from "./Contact";
 // CUSTOM CAKE
 import CustomCakeBuilder from "./CustomCakeBuilder";
 import CustomCakeSuccess from "./CustomCakeSuccess";
+import CustomCakeFinalPaymentSuccess from "./CustomCakeFinalPaymentSuccess";
 
 // CHECKOUT FLOW
 import Checkout from "./Checkout";
@@ -317,8 +318,11 @@ export default function App() {
         <Route path="/contact" element={<Contact />} />
 
         {/* ===== CUSTOM CAKE ===== */}
+        {/* CUSTOM CAKE ROUTES */}
         <Route path="/custom-cake" element={<CustomCakeBuilder />} />
         <Route path="/custom-cake/success" element={<CustomCakeSuccess />} />
+        {/* NEW: Final payment success page (after customer pays remaining balance) */}
+        <Route path="/custom-cake/final-payment-success" element={<CustomCakeFinalPaymentSuccess />} />
 
         {/* ===== CHECKOUT FLOW ===== */}
         {/* Step 1: Customer enters details */}

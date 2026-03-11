@@ -24,6 +24,11 @@ export default function CustomCakeBuilder() {
   const [customerName, setCustomerName] = useState("");
   const [customerEmail, setCustomerEmail] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
+  const [deliveryAddressLine1, setDeliveryAddressLine1] = useState("");
+  const [deliveryAddressLine2, setDeliveryAddressLine2] = useState("");
+  const [deliveryCity, setDeliveryCity] = useState("");
+  const [deliveryPostcode, setDeliveryPostcode] = useState("");
+  const [deliveryNotes, setDeliveryNotes] = useState("");
   const [referenceImages, setReferenceImages] = useState([]);
   const [imagePreviews, setImagePreviews] = useState([]);
 
@@ -88,6 +93,8 @@ export default function CustomCakeBuilder() {
         messageOnCake, specialRequests,
         referenceImages: imageUrls,
         eventType, eventDate: eventDate || null,
+        deliveryAddressLine1, deliveryAddressLine2,
+        deliveryCity, deliveryPostcode, deliveryNotes,
       });
       setEnquiryId(result.enquiry.id);
     } catch (e) {
@@ -332,6 +339,61 @@ export default function CustomCakeBuilder() {
                   style={{ width: "100%", padding: 10, borderRadius: 8, border: "1px solid var(--color-border)", background: "var(--color-bg-secondary)" }}
                 />
               </label>
+
+              <hr style={{ border: "none", borderTop: "1px solid var(--color-border)", margin: "8px 0" }} />
+              <h3 style={{ marginTop: 12, marginBottom: 8 }}>Delivery Address (optional)</h3>
+
+              <label>
+                <span style={{ fontWeight: 600, display: "block", marginBottom: 4 }}>Address Line 1</span>
+                <input
+                  value={deliveryAddressLine1}
+                  onChange={(e) => setDeliveryAddressLine1(e.target.value)}
+                  placeholder="House number and street"
+                  style={{ width: "100%", padding: 10, borderRadius: 8, border: "1px solid var(--color-border)", background: "var(--color-bg-secondary)" }}
+                />
+              </label>
+              <label>
+                <span style={{ fontWeight: 600, display: "block", marginBottom: 4 }}>Address Line 2</span>
+                <input
+                  value={deliveryAddressLine2}
+                  onChange={(e) => setDeliveryAddressLine2(e.target.value)}
+                  placeholder="Flat, building, etc."
+                  style={{ width: "100%", padding: 10, borderRadius: 8, border: "1px solid var(--color-border)", background: "var(--color-bg-secondary)" }}
+                />
+              </label>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                <label>
+                  <span style={{ fontWeight: 600, display: "block", marginBottom: 4 }}>City</span>
+                  <input
+                    value={deliveryCity}
+                    onChange={(e) => setDeliveryCity(e.target.value)}
+                    placeholder="e.g. London"
+                    style={{ width: "100%", padding: 10, borderRadius: 8, border: "1px solid var(--color-border)", background: "var(--color-bg-secondary)" }}
+                  />
+                </label>
+                <label>
+                  <span style={{ fontWeight: 600, display: "block", marginBottom: 4 }}>Postcode</span>
+                  <input
+                    value={deliveryPostcode}
+                    onChange={(e) => setDeliveryPostcode(e.target.value)}
+                    placeholder="e.g. UB8 1AA"
+                    style={{ width: "100%", padding: 10, borderRadius: 8, border: "1px solid var(--color-border)", background: "var(--color-bg-secondary)" }}
+                  />
+                </label>
+              </div>
+              <label>
+                <span style={{ fontWeight: 600, display: "block", marginBottom: 4 }}>Delivery Notes</span>
+                <textarea
+                  value={deliveryNotes}
+                  onChange={(e) => setDeliveryNotes(e.target.value)}
+                  placeholder="Special delivery instructions, etc."
+                  rows={2}
+                  style={{ width: "100%", padding: 10, borderRadius: 8, border: "1px solid var(--color-border)", background: "var(--color-bg-secondary)", resize: "vertical" }}
+                />
+              </label>
+
+              <hr style={{ border: "none", borderTop: "1px solid var(--color-border)", margin: "8px 0" }} />
+
               <label>
                 <span style={{ fontWeight: 600, display: "block", marginBottom: 4 }}>Event Type</span>
                 <select
@@ -436,6 +498,18 @@ export default function CustomCakeBuilder() {
               <p><strong>Name:</strong> {customerName}</p>
               <p><strong>Email:</strong> {customerEmail}</p>
               {customerPhone && <p><strong>Phone:</strong> {customerPhone}</p>}
+              {(deliveryAddressLine1 || deliveryCity || deliveryPostcode) && (
+                <>
+                  <hr style={{ border: "none", borderTop: "1px solid var(--color-border)", margin: "8px 0" }} />
+                  <p><strong>Delivery Address:</strong></p>
+                  <p style={{ marginLeft: 16, lineHeight: 1.6 }}>
+                    {deliveryAddressLine1}
+                    {deliveryAddressLine2 && <><br />{deliveryAddressLine2}</>}
+                    {deliveryCity && <><br />{deliveryCity}{deliveryPostcode && `, ${deliveryPostcode}`}</>}
+                  </p>
+                  {deliveryNotes && <p><strong>Delivery Notes:</strong> {deliveryNotes}</p>}
+                </>
+              )}
               <hr style={{ border: "none", borderTop: "1px solid var(--color-border)", margin: "8px 0" }} />
               <p style={{ fontSize: 18 }}><strong>Estimated Price:</strong> {formatGBP(estimatedPrice)}</p>
               <p style={{ fontSize: 18, color: "var(--color-primary)" }}>
