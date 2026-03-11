@@ -41,10 +41,14 @@ app.use("/api/webhooks", webhookRoutes);
 /**
  * Parse JSON for normal API routes (products/checkout/orders etc).
  * This must come AFTER webhook raw-body route above.
+ *
+ * LIMIT INCREASED: Default 100kb is too small for base64 images or large payloads.
+ * Set to 10mb to handle image uploads and large order data.
  */
 app.use(cookieParser());
 
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
 // Allowed origins (local + prod)
 const ALLOWED_ORIGINS = [
