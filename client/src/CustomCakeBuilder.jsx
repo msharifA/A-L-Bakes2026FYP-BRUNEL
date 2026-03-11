@@ -118,6 +118,14 @@ export default function CustomCakeBuilder() {
     );
   }
 
+  if (!config) {
+    return (
+      <div style={{ padding: 16, maxWidth: 800, margin: "0 auto", textAlign: "center" }}>
+        <p style={{ color: "salmon" }}>{error || "Failed to load cake builder. Please try again later."}</p>
+      </div>
+    );
+  }
+
   // Enquiry submitted - show deposit prompt
   if (enquiryId) {
     return (

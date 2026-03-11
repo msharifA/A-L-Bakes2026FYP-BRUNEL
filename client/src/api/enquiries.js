@@ -1,13 +1,13 @@
-const API = import.meta.env.VITE_API_BASE_URL ?? "/api";
+const API = import.meta.env.VITE_API_URL || "";
 
 export async function getCakeConfig() {
-  const r = await fetch(`${API}/enquiries/config`);
+  const r = await fetch(`${API}/api/enquiries/config`);
   if (!r.ok) throw new Error("Failed to load cake options");
   return r.json();
 }
 
 export async function submitEnquiry(data) {
-  const r = await fetch(`${API}/enquiries`, {
+  const r = await fetch(`${API}/api/enquiries`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
@@ -18,7 +18,7 @@ export async function submitEnquiry(data) {
 }
 
 export async function createDepositSession(enquiryId) {
-  const r = await fetch(`${API}/enquiries/${enquiryId}/deposit`, {
+  const r = await fetch(`${API}/api/enquiries/${enquiryId}/deposit`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
   });
@@ -28,7 +28,7 @@ export async function createDepositSession(enquiryId) {
 }
 
 export async function confirmDeposit(enquiryId, sessionId) {
-  const r = await fetch(`${API}/enquiries/${enquiryId}/confirm-deposit`, {
+  const r = await fetch(`${API}/api/enquiries/${enquiryId}/confirm-deposit`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ sessionId }),
@@ -42,7 +42,7 @@ export async function uploadReferenceImages(files) {
   const formData = new FormData();
   files.forEach((file) => formData.append("images", file));
 
-  const r = await fetch(`${API}/enquiries/upload-images`, {
+  const r = await fetch(`${API}/api/enquiries/upload-images`, {
     method: "POST",
     body: formData,
   });
@@ -52,7 +52,7 @@ export async function uploadReferenceImages(files) {
 }
 
 export async function getEnquiry(enquiryId) {
-  const r = await fetch(`${API}/enquiries/${enquiryId}`);
+  const r = await fetch(`${API}/api/enquiries/${enquiryId}`);
   if (!r.ok) throw new Error("Enquiry not found");
   return r.json();
 }
