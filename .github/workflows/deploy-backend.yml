@@ -70,7 +70,7 @@ jobs:
         run: |
           cat > Dockerrun.aws.json <<'JSON'
           {
-            "AWSEBDockerrunVersion": 1,
+            "AWSEBDockerrunVersion": "1",
             "Image": {
               "Name": "__IMAGE__",
               "Update": "true"

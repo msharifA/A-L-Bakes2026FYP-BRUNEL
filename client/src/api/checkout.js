@@ -1,9 +1,9 @@
 // client/src/api/checkout.js
 
-const API = import.meta.env.VITE_API_URL || "";
+const BASE = import.meta.env.VITE_API_BASE_URL || "";
 
 export async function createCheckoutSession(payload) {
-  const r = await fetch(`${API}/api/checkout/create-session`, {
+  const r = await fetch(`${BASE}/api/checkout/create-session`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
