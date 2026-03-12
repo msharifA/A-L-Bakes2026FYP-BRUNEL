@@ -21,6 +21,8 @@ import adminProductsRoutes from "./routes/admin.products.routes.js";
 import reviewReportsRoutes from "./routes/review.reports.routes.js";
 import salesReportsRoutes from "./routes/sales.reports.routes.js";
 import customerProfileRoutes from "./routes/customer.profile.routes.js";
+import enquiriesRoutes from "./routes/enquiries.routes.js";
+import adminEnquiriesRoutes from "./routes/admin.enquiries.routes.js";
 
 console.log("ENV PORT =", process.env.PORT);
 console.log("CWD =", process.cwd());
@@ -39,10 +41,14 @@ app.use("/api/webhooks", webhookRoutes);
 /**
  * Parse JSON for normal API routes (products/checkout/orders etc).
  * This must come AFTER webhook raw-body route above.
+ *
+ * LIMIT INCREASED: Default 100kb is too small for base64 images or large payloads.
+ * Set to 10mb to handle image uploads and large order data.
  */
 app.use(cookieParser());
 
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
 // Allowed origins (local + prod)
 const ALLOWED_ORIGINS = [
@@ -62,6 +68,31 @@ app.use(
     credentials: true,
   })
 );
+
+// Basic CSRF protection via Referer validation (production only)
+const isProd = process.env.NODE_ENV === "production";
+app.use((req, res, next) => {
+  // Skip in development or for GET/HEAD/OPTIONS requests
+  if (!isProd || ["GET", "HEAD", "OPTIONS"].includes(req.method)) {
+    return next();
+  }
+
+  // Check Referer or Origin header
+  const referer = req.headers.referer || req.headers.origin;
+
+  // Allow requests without referer (e.g., API clients, Postman)
+  if (!referer) return next();
+
+  // Validate referer starts with an allowed origin
+  const isValidOrigin = ALLOWED_ORIGINS.some(origin => referer.startsWith(origin));
+
+  if (!isValidOrigin) {
+    console.warn(`CSRF: Blocked request from ${referer} to ${req.path}`);
+    return res.status(403).json({ error: "Invalid request origin" });
+  }
+
+  next();
+});
 
 const raw = process.env.STRIPE_SECRET_KEY;
 console.log("Stripe key typeof:", typeof raw);
@@ -144,6 +175,8 @@ api.use("/admin", requireAdmin, adminOrdersRoutes);
 api.use("/admin", requireAdmin, adminReviewsRoutes);
 api.use("/admin", requireAdmin, adminProductsRoutes);
 api.use("/admin", requireAdmin, salesReportsRoutes);
+api.use("/admin", requireAdmin, adminEnquiriesRoutes);
+api.use("/enquiries", enquiriesRoutes);
 api.use("/auth", authRoutes);
 api.use("/auth/customer", customerAuthRoutes);
 api.use("/auth/admin", adminUsersRoutes);
@@ -363,7 +396,40 @@ api.post("/run-migrations", async (req, res) => {
     `);
     results.push("review_reports table created");
 
+    // Cake Enquiries table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS cake_enquiries (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        customer_name VARCHAR(200) NOT NULL,
+        customer_email VARCHAR(300) NOT NULL,
+        customer_phone VARCHAR(30),
+        cake_size VARCHAR(50) NOT NULL,
+        cake_flavour VARCHAR(100) NOT NULL,
+        filling VARCHAR(100),
+        frosting VARCHAR(100),
+        tiers INTEGER DEFAULT 1,
+        servings INTEGER,
+        message_on_cake VARCHAR(200),
+        special_requests TEXT,
+        reference_images TEXT,
+        event_type VARCHAR(100),
+        event_date DATE,
+        estimated_price_pence INTEGER,
+        deposit_pence INTEGER,
+        deposit_status VARCHAR(30) DEFAULT 'none',
+        stripe_session_id VARCHAR(500),
+        status VARCHAR(30) DEFAULT 'new',
+        admin_notes TEXT,
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        updated_at TIMESTAMPTZ DEFAULT NOW()
+      )
+    `);
+    results.push("cake_enquiries table created");
+
     // Create indexes
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_cake_enquiries_status ON cake_enquiries(status)`);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_cake_enquiries_email ON cake_enquiries(customer_email)`);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_cake_enquiries_created ON cake_enquiries(created_at DESC)`);
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_orders_customer_email ON orders(customer_email)`);
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status)`);
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_orders_created_at ON orders(created_at DESC)`);
@@ -374,6 +440,36 @@ api.post("/run-migrations", async (req, res) => {
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_product_reviews_product_id ON product_reviews(product_id)`);
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_product_reviews_status ON product_reviews(status)`);
     results.push("indexes created");
+
+    // Migration 006: Add delivery address columns
+    await pool.query(`
+      ALTER TABLE orders
+        ADD COLUMN IF NOT EXISTS delivery_address_line1 VARCHAR(300),
+        ADD COLUMN IF NOT EXISTS delivery_address_line2 VARCHAR(300),
+        ADD COLUMN IF NOT EXISTS delivery_city VARCHAR(100),
+        ADD COLUMN IF NOT EXISTS delivery_postcode VARCHAR(20),
+        ADD COLUMN IF NOT EXISTS delivery_notes TEXT
+    `);
+    await pool.query(`
+      ALTER TABLE cake_enquiries
+        ADD COLUMN IF NOT EXISTS delivery_address_line1 VARCHAR(300),
+        ADD COLUMN IF NOT EXISTS delivery_address_line2 VARCHAR(300),
+        ADD COLUMN IF NOT EXISTS delivery_city VARCHAR(100),
+        ADD COLUMN IF NOT EXISTS delivery_postcode VARCHAR(20),
+        ADD COLUMN IF NOT EXISTS delivery_notes TEXT
+    `);
+    results.push("migration 006: delivery address columns added");
+
+    // Migration 007: Add final payment tracking
+    await pool.query(`
+      ALTER TABLE cake_enquiries
+        ADD COLUMN IF NOT EXISTS final_payment_pence INTEGER,
+        ADD COLUMN IF NOT EXISTS final_payment_status VARCHAR(30) DEFAULT 'pending',
+        ADD COLUMN IF NOT EXISTS final_payment_stripe_session_id VARCHAR(500),
+        ADD COLUMN IF NOT EXISTS final_payment_link VARCHAR(1000)
+    `);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_cake_enquiries_final_payment_status ON cake_enquiries(final_payment_status)`);
+    results.push("migration 007: final payment tracking columns added");
 
     // Insert sample products if table is empty
     const productCount = await pool.query("SELECT COUNT(*) FROM products");
@@ -486,6 +582,11 @@ api.post("/checkout/create-session", async (req, res) => {
         customer_name: checkout.name,
         delivery_method: checkout.deliveryMethod || "pickup",
         delivery_date: checkout.deliveryDate || "",
+        delivery_address_line1: checkout.address?.address1 || "",
+        delivery_address_line2: checkout.address?.address2 || "",
+        delivery_city: checkout.address?.city || "",
+        delivery_postcode: checkout.address?.postcode || "",
+        delivery_notes: checkout.notes || "",
       },
     });
 

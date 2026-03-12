@@ -58,6 +58,11 @@ import Cart from "./Cart";
 import About from "./About";
 import Contact from "./Contact";
 
+// CUSTOM CAKE
+import CustomCakeBuilder from "./CustomCakeBuilder";
+import CustomCakeSuccess from "./CustomCakeSuccess";
+import CustomCakeFinalPaymentSuccess from "./CustomCakeFinalPaymentSuccess";
+
 // CHECKOUT FLOW
 import Checkout from "./Checkout";
 import CheckoutReview from "./CheckoutReview";
@@ -81,6 +86,7 @@ import AdminProducts from "./AdminProducts";
 import AdminProductForm from "./AdminProductForm";
 import AdminReviewReports from "./AdminReviewReports";
 import AdminSalesReports from "./AdminSalesReports";
+import AdminEnquiries from "./AdminEnquiries";
 
 /**
  * NAVBAR COMPONENT
@@ -174,6 +180,7 @@ function NavBar() {
       </Link>
       <Link to="/">Home</Link>
       <Link to="/menu">Menu</Link>
+      <Link to="/custom-cake">Custom Cake</Link>
       <Link to="/cart" style={{ position: "relative" }}>
         Cart
         {cartCount > 0 && (
@@ -310,6 +317,13 @@ export default function App() {
         <Route path="/about" element={<About />} />
         <Route path="/contact" element={<Contact />} />
 
+        {/* ===== CUSTOM CAKE ===== */}
+        {/* CUSTOM CAKE ROUTES */}
+        <Route path="/custom-cake" element={<CustomCakeBuilder />} />
+        <Route path="/custom-cake/success" element={<CustomCakeSuccess />} />
+        {/* NEW: Final payment success page (after customer pays remaining balance) */}
+        <Route path="/custom-cake/final-payment-success" element={<CustomCakeFinalPaymentSuccess />} />
+
         {/* ===== CHECKOUT FLOW ===== */}
         {/* Step 1: Customer enters details */}
         <Route path="/checkout" element={<Checkout />} />
@@ -341,6 +355,7 @@ export default function App() {
         <Route path="/admin/products/:id/edit" element={<AdminProductForm />} />
         <Route path="/admin/review-reports" element={<AdminReviewReports />} />
         <Route path="/admin/sales" element={<AdminSalesReports />} />
+        <Route path="/admin/enquiries" element={<AdminEnquiries />} />
       </Routes>
     </BrowserRouter>
   );
