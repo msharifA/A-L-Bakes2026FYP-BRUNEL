@@ -441,6 +441,36 @@ api.post("/run-migrations", async (req, res) => {
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_product_reviews_status ON product_reviews(status)`);
     results.push("indexes created");
 
+    // Migration 006: Add delivery address columns
+    await pool.query(`
+      ALTER TABLE orders
+        ADD COLUMN IF NOT EXISTS delivery_address_line1 VARCHAR(300),
+        ADD COLUMN IF NOT EXISTS delivery_address_line2 VARCHAR(300),
+        ADD COLUMN IF NOT EXISTS delivery_city VARCHAR(100),
+        ADD COLUMN IF NOT EXISTS delivery_postcode VARCHAR(20),
+        ADD COLUMN IF NOT EXISTS delivery_notes TEXT
+    `);
+    await pool.query(`
+      ALTER TABLE cake_enquiries
+        ADD COLUMN IF NOT EXISTS delivery_address_line1 VARCHAR(300),
+        ADD COLUMN IF NOT EXISTS delivery_address_line2 VARCHAR(300),
+        ADD COLUMN IF NOT EXISTS delivery_city VARCHAR(100),
+        ADD COLUMN IF NOT EXISTS delivery_postcode VARCHAR(20),
+        ADD COLUMN IF NOT EXISTS delivery_notes TEXT
+    `);
+    results.push("migration 006: delivery address columns added");
+
+    // Migration 007: Add final payment tracking
+    await pool.query(`
+      ALTER TABLE cake_enquiries
+        ADD COLUMN IF NOT EXISTS final_payment_pence INTEGER,
+        ADD COLUMN IF NOT EXISTS final_payment_status VARCHAR(30) DEFAULT 'pending',
+        ADD COLUMN IF NOT EXISTS final_payment_stripe_session_id VARCHAR(500),
+        ADD COLUMN IF NOT EXISTS final_payment_link VARCHAR(1000)
+    `);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_cake_enquiries_final_payment_status ON cake_enquiries(final_payment_status)`);
+    results.push("migration 007: final payment tracking columns added");
+
     // Insert sample products if table is empty
     const productCount = await pool.query("SELECT COUNT(*) FROM products");
     if (parseInt(productCount.rows[0].count) === 0) {
