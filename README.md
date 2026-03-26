@@ -162,28 +162,10 @@ A full-stack e-commerce platform built for artisan bakeries, featuring a custom 
 
 All services run within AWS Free Tier limits.
 
-## Getting Started
+## Live Demo
 
-### Prerequisites
-- Node.js 18+
-- PostgreSQL (local) or AWS RDS connection
-- Stripe account (test keys)
-- AWS account (for S3 image uploads)
+The platform is live at: https://dizqgvrbhxb2t.cloudfront.net
 
-### Backend
-```bash
-cd server
-cp .env.example .env    # Configure environment variables
-npm install
-npm run dev             # Starts on port 3000
-```
-
-### Frontend
-```bash
-cd client
-npm install
-npm run dev             # Starts on port 5173
-```
 
 ### Environment Variables
 
