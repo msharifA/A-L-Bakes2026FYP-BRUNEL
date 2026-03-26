@@ -142,3 +142,8 @@ vite.config.ts.timestamp-*
 .elasticbeanstalk/*
 !.elasticbeanstalk/*.cfg.yml
 !.elasticbeanstalk/*.global.yml
+
+# Misc / accidental files
+get-pip.py
+cookies.txt
+*.bak
